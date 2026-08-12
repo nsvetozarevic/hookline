@@ -1,0 +1,64 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/var/www/html
+    env_file:
+      - .env.docker.local
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - hookline
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    networks:
+      - hookline
+
+  postgres:
+    image: postgres:16-alpine
+    env_file:
+      - .env.docker.local
+    ports:
+      # Host 5434 — 5432/5433 taken by local Homebrew Postgres installs.
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hookline -d hookline"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - hookline
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - hookline
+
+volumes:
+  postgres_data:
+
+networks:
+  hookline:
+    driver: bridge
