@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: hookline-app
     volumes:
       - .:/var/www/html
     env_file:
@@ -14,6 +15,25 @@ services:
         condition: service_healthy
     networks:
       - hookline
+
+  worker:
+    image: hookline-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: php artisan queue:work --verbose --sleep=1 --tries=1
+    volumes:
+      - .:/var/www/html
+    env_file:
+      - .env.docker.local
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - hookline
+    restart: unless-stopped
 
   nginx:
     image: nginx:1.27-alpine
@@ -32,7 +52,6 @@ services:
     env_file:
       - .env.docker.local
     ports:
-      # Host 5434 — 5432/5433 taken by local Homebrew Postgres installs.
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data

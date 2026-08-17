@@ -14,10 +14,9 @@ RUN apt-get update \
         pgsql \
         bcmath \
         intl \
-        opcache \
         pcntl \
         zip \
-    && pecl install redis \
+    && MAKEFLAGS="" pecl install redis \
     && docker-php-ext-enable redis \
     && apt-get purge -y --auto-remove $PHPIZE_DEPS \
     && rm -rf /var/lib/apt/lists/*
