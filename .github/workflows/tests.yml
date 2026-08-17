@@ -72,3 +72,9 @@ jobs:
 
       - name: Tests
         run: php artisan test
+
+      - name: PHP CS Fixer
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff --using-cache=no
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --memory-limit=1G
