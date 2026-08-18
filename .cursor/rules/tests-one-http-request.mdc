@@ -1,0 +1,35 @@
+---
+description: Feature tests make one HTTP request — seed state, do not chain requests
+alwaysApply: true
+---
+
+# One HTTP request per test
+
+A test method hits the app **once**. Setup is factories, `RateLimiter::hit`, `actingAs`, `config()`, not a previous `$this->get` / `post` / `call`.
+
+Two requests hide which call failed, couple tests to leftover state, and are slower. Duplicate/idempotent/throttle cases seed the precondition, then one request.
+
+```php
+// BAD — first POST is setup
+$this->postCapture($token, $body, $headers)->assertAccepted();
+$this->postCapture($token, $body, $headers)->assertOk();
+
+// GOOD — seed, then one POST
+EndpointEvent::factory()->create([
+    'endpoint_id' => $endpoint->id,
+    'deduplication_key' => 'evt_dup',
+    'payload' => $body,
+]);
+$this->postCapture($token, $body, $headers)->assertOk();
+```
+
+```php
+// BAD — first POST fills the limiter
+$this->postCapture($token, $body, $headers)->assertNotFound();
+$this->postCapture($token, $body, $headers)->assertTooManyRequests();
+
+// GOOD — seed the bucket Laravel will check (named limiter `capture` hashes `md5($name.$by)`)
+config(['hookline.capture.rate_limit_per_minute' => 1]);
+RateLimiter::hit(md5('capture'.$token));
+$this->postCapture($token, $body, $headers)->assertTooManyRequests();
+```
