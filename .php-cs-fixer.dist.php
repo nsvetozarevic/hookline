@@ -6,6 +6,8 @@ use PhpCsFixer\Finder;
 $finder = Finder::create()
     ->in([
         __DIR__.'/app',
+        __DIR__.'/Domain',
+        __DIR__.'/Interfaces',
         __DIR__.'/bootstrap',
         __DIR__.'/config',
         __DIR__.'/database',
@@ -32,6 +34,27 @@ return (new Config())
         'binary_operator_spaces' => true,
         'blank_line_before_statement' => [
             'statements' => ['return'],
+        ],
+        'class_attributes_separation' => [
+            'elements' => [
+                'method' => 'one',
+            ],
+        ],
+        'ordered_class_elements' => [
+            'order' => [
+                'use_trait',
+                'constant_public',
+                'constant_protected',
+                'constant_private',
+                'property_public',
+                'property_protected',
+                'property_private',
+                'construct',
+                'phpunit',
+                'method_public',
+                'method_protected',
+                'method_private',
+            ],
         ],
     ])
     ->setFinder($finder);
