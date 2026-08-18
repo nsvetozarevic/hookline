@@ -4,6 +4,8 @@ includes:
 parameters:
     paths:
         - app
+        - Domain
+        - Interfaces
         - bootstrap
         - config
         - database
