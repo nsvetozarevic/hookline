@@ -8,7 +8,9 @@
 .phpunit.result.cache
 .php-cs-fixer.cache
 /.codex
-/.cursor/
+/.cursor/*
+!/.cursor/rules/
+!/.cursor/rules/**
 /.idea
 /.nova
 /.phpunit.cache
