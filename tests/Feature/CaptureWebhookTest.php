@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Domain\Endpoint\Models\Endpoint;
 use Domain\Endpoint\Models\EndpointEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class CaptureWebhookTest extends TestCase
@@ -16,6 +17,18 @@ class CaptureWebhookTest extends TestCase
         $response = $this->postCapture('missing-token', '{}', $this->signedHeaders('secret', '{}'));
 
         $response->assertNotFound();
+    }
+
+    public function test_capture_is_rate_limited(): void
+    {
+        config(['hookline.capture.rate_limit_per_minute' => 1]);
+
+        $captureToken = 'missing-token';
+        RateLimiter::hit(md5('capture'.$captureToken));
+
+        $this->postCapture($captureToken, '{}', $this->signedHeaders('secret', '{}'))
+            ->assertTooManyRequests()
+            ->assertHeader('Retry-After');
     }
 
     public function test_inactive_endpoint_returns_not_found(): void
