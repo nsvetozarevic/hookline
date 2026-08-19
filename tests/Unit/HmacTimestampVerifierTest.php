@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit;
 
 use Domain\Endpoint\Utility\HmacTimestampVerifier;
@@ -81,6 +83,38 @@ class HmacTimestampVerifierTest extends TestCase
                 $timestamp,
                 $rawRequestBody,
                 $signature,
+                300,
+                1700000000,
+            ),
+        );
+    }
+
+    public function test_empty_signing_secret_fails(): void
+    {
+        $timestamp = '1700000000';
+        $rawRequestBody = '{}';
+        $signature = hash_hmac('sha256', $timestamp.'.'.$rawRequestBody, 'secret');
+
+        $this->assertFalse(
+            $this->hmacTimestampVerifier->verify(
+                '',
+                $timestamp,
+                $rawRequestBody,
+                $signature,
+                300,
+                1700000000,
+            ),
+        );
+    }
+
+    public function test_empty_signature_fails(): void
+    {
+        $this->assertFalse(
+            $this->hmacTimestampVerifier->verify(
+                'secret',
+                '1700000000',
+                '{}',
+                '',
                 300,
                 1700000000,
             ),

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Domain\Endpoint\Actions;
 
 use Domain\Endpoint\Data\CaptureWebhookData;
@@ -26,7 +28,6 @@ class CaptureWebhook
                 $endpointEvent->deduplication_key = $deduplicationKey;
                 $endpointEvent->headers = $captureWebhookData->capturedHeaders;
                 $endpointEvent->payload = $rawRequestBody;
-                $endpointEvent->received_at = now();
                 $endpointEvent->save();
             });
 

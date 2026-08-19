@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use Domain\Endpoint\Models\Endpoint;
@@ -23,7 +25,6 @@ class EndpointEventFactory extends Factory
             'deduplication_key' => fake()->unique()->uuid(),
             'headers' => ['content-type' => 'application/json'],
             'payload' => '{"ok":true}',
-            'received_at' => now(),
         ];
     }
 }

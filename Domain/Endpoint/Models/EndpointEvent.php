@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Domain\Endpoint\Models;
 
 use Database\Factories\EndpointEventFactory;
@@ -10,10 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property array<string, string> $headers
- * @property string $deduplication_key
- * @property string $payload
  */
-#[Fillable(['endpoint_id', 'deduplication_key', 'headers', 'payload', 'received_at'])]
+#[Fillable(['endpoint_id', 'deduplication_key', 'headers', 'payload'])]
 class EndpointEvent extends Model
 {
     /** @use HasFactory<EndpointEventFactory> */
@@ -39,7 +39,6 @@ class EndpointEvent extends Model
     {
         return [
             'headers' => 'array',
-            'received_at' => 'datetime',
         ];
     }
 }

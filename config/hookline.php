@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     'capture' => [
         'max_body_kilobytes' => 1024,

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use Domain\Endpoint\Models\Endpoint;
@@ -209,6 +211,39 @@ class CaptureWebhookTest extends TestCase
             ->assertJsonPath('deduplication_key', 'evt_dup');
 
         $this->assertDatabaseCount('endpoint_events', 1);
+    }
+
+    public function test_duplicate_event_id_with_a_different_body_keeps_the_original_payload(): void
+    {
+        $endpoint = Endpoint::factory()->create();
+        $originalPayload = '{"ok":true}';
+        EndpointEvent::factory()->create([
+            'endpoint_id' => $endpoint->id,
+            'deduplication_key' => 'evt_dup',
+            'payload' => $originalPayload,
+        ]);
+
+        $newBody = '{"ok":false}';
+
+        $response = $this->postCapture(
+            $endpoint->capture_token,
+            $newBody,
+            $this->signedHeaders(
+                signingSecret: $endpoint->signing_secret,
+                body: $newBody,
+                hooklineEventId: 'evt_dup',
+            ),
+        );
+
+        $response->assertOk()
+            ->assertJsonPath('deduplication_key', 'evt_dup');
+
+        $this->assertDatabaseCount('endpoint_events', 1);
+        $this->assertDatabaseHas('endpoint_events', [
+            'endpoint_id' => $endpoint->id,
+            'deduplication_key' => 'evt_dup',
+            'payload' => $originalPayload,
+        ]);
     }
 
     public function test_missing_hookline_event_id_uses_body_hash_as_deduplication_key(): void

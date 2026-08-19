@@ -25,6 +25,7 @@ return (new Config())
     ->setParallelConfig(\PhpCsFixer\Runner\Parallel\ParallelConfigFactory::detect())
     ->setRules([
         '@PSR12' => true,
+        'declare_strict_types' => true,
         'array_syntax' => ['syntax' => 'short'],
         'ordered_imports' => ['sort_algorithm' => 'alpha'],
         'no_unused_imports' => true,
@@ -57,4 +58,5 @@ return (new Config())
             ],
         ],
     ])
+    ->setRiskyAllowed(true)
     ->setFinder($finder);

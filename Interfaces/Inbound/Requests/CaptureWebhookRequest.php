@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Interfaces\Inbound\Requests;
 
 use Domain\Endpoint\Data\CaptureWebhookData;
@@ -110,7 +112,7 @@ class CaptureWebhookRequest extends FormRequest
 
     private function ensureSignatureIsValid(): void
     {
-        $hmacTimestampVerifier = app(HmacTimestampVerifier::class);
+        $hmacTimestampVerifier = new HmacTimestampVerifier();
 
         $isValid = $hmacTimestampVerifier->verify(
             $this->endpoint()->signing_secret,
