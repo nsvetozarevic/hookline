@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Panel\Auth;
 
+use App\Routing\WebRoute;
 use Domain\User\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -17,7 +18,7 @@ class RegisterTest extends TestCase
     #[Test]
     public function register_creates_a_user_and_authenticates(): void
     {
-        $this->post('/register', $this->validPayload())->assertRedirect('/endpoints');
+        $this->post(route(WebRoute::Register), $this->validPayload())->assertRedirect(route(WebRoute::EndpointsIndex));
 
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
@@ -35,7 +36,7 @@ class RegisterTest extends TestCase
     {
         User::factory()->create(['email' => 'taken@example.com']);
 
-        $this->post('/register', array_merge($this->validPayload(), $invalidData))
+        $this->post(route(WebRoute::Register), array_merge($this->validPayload(), $invalidData))
             ->assertSessionHasErrors([$fieldKey]);
 
         $this->assertGuest();

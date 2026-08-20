@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Panel\Auth;
 
+use App\Routing\WebRoute;
 use Domain\User\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
@@ -20,10 +21,10 @@ class LoginTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->post('/login', [
+        $this->post(route(WebRoute::Login), [
             'email' => $user->email,
             'password' => 'password',
-        ])->assertRedirect('/endpoints');
+        ])->assertRedirect(route(WebRoute::EndpointsIndex));
 
         $this->assertAuthenticatedAs($user);
     }
@@ -33,7 +34,7 @@ class LoginTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->post('/login', [
+        $this->post(route(WebRoute::Login), [
             'email' => $user->email,
             'password' => 'wrong-password',
         ])->assertSessionHasErrors('email');
@@ -47,7 +48,7 @@ class LoginTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->post('/logout')
+            ->post(route(WebRoute::Logout))
             ->assertRedirect();
 
         $this->assertGuest();
@@ -63,7 +64,7 @@ class LoginTest extends TestCase
             RateLimiter::hit(md5('login'.$throttleKey));
         }
 
-        $this->post('/login', [
+        $this->post(route(WebRoute::Login), [
             'email' => $email,
             'password' => 'password',
         ])->assertTooManyRequests();

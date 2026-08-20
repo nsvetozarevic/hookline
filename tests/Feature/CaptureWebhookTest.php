@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Routing\WebRoute;
 use Domain\Endpoint\Models\Endpoint;
 use Domain\Endpoint\Models\EndpointEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -292,7 +293,7 @@ class CaptureWebhookTest extends TestCase
     {
         return $this->call(
             method: 'POST',
-            uri: '/capture/'.$captureToken,
+            uri: route(WebRoute::Capture, ['captureToken' => $captureToken], absolute: false),
             server: $this->transformHeadersToServerVars($headers),
             content: $body,
         );
