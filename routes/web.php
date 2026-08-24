@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Interfaces\Inbound\Controllers\CaptureWebhookController;
 use Interfaces\Panel\Livewire\Endpoints\IndexEndpointComponent;
 use Interfaces\Panel\Livewire\Endpoints\ShowEndpointComponent;
+use Interfaces\Panel\Livewire\Events\ShowEndpointEventComponent;
 
 Route::post('/capture/{captureToken}', CaptureWebhookController::class)
     ->middleware('throttle:capture')
@@ -17,4 +18,6 @@ Route::middleware('auth')->group(function (): void {
         ->name(WebRoute::IndexEndpoints);
     Route::get('/endpoints/{endpoint}', ShowEndpointComponent::class)
         ->name(WebRoute::ShowEndpoints);
+    Route::get('/events/{endpointEvent}', ShowEndpointEventComponent::class)
+        ->name(WebRoute::ShowEvents);
 });

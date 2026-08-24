@@ -9,6 +9,7 @@ enum WebRoute: string
     case Capture = 'capture';
     case IndexEndpoints = 'endpoints.index';
     case ShowEndpoints = 'endpoints.show';
+    case ShowEvents = 'events.show';
     case ShowLogin = 'login';
     case Login = 'login.store';
     case Logout = 'logout';

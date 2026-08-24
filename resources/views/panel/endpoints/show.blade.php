@@ -67,7 +67,7 @@
         <ul class="mt-4 space-y-2">
             @foreach ($endpointEvents as $endpointEvent)
                 <li wire:key="endpoint-event-{{ $endpointEvent->id }}" class="border border-zinc-800 px-3 py-2 text-zinc-400">
-                    <span class="text-zinc-50">#{{ $endpointEvent->id }}</span>
+                    <a href="{{ route(WebRoute::ShowEvents, $endpointEvent) }}" class="text-zinc-50 underline">#{{ $endpointEvent->id }}</a>
                     <span title="{{ $endpointEvent->deduplication_key }}"> · {{ Str::limit($endpointEvent->deduplication_key, 32) }}</span>
                     <span> · {{ $endpointEvent->headers['content-type'] ?? '—' }}</span>
                     <span> · {{ $endpointEvent->created_at->toDateTimeString() }}</span>

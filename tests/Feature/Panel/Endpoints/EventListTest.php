@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Panel\Endpoints;
 
+use App\Routing\WebRoute;
 use Domain\Endpoint\Models\Endpoint;
 use Domain\Endpoint\Models\EndpointEvent;
 use Domain\User\Models\User;
@@ -46,6 +47,7 @@ class EventListTest extends TestCase
         Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
             ->assertDontSee('No events yet — try the curl above.')
             ->assertSee('#'.$endpointEvent->id)
+            ->assertSee(route(WebRoute::ShowEvents, $endpointEvent), false)
             ->assertSee('evt_visible')
             ->assertSee('application/json')
             ->assertSee($endpointEvent->created_at->toDateTimeString())
