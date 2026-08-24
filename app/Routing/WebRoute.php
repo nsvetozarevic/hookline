@@ -7,7 +7,8 @@ namespace App\Routing;
 enum WebRoute: string
 {
     case Capture = 'capture';
-    case EndpointsIndex = 'endpoints.index';
+    case IndexEndpoints = 'endpoints.index';
+    case ShowEndpoints = 'endpoints.show';
     case ShowLogin = 'login';
     case Login = 'login.store';
     case Logout = 'logout';

@@ -18,7 +18,7 @@ class RegisterTest extends TestCase
     #[Test]
     public function register_creates_a_user_and_authenticates(): void
     {
-        $this->post(route(WebRoute::Register), $this->validPayload())->assertRedirect(route(WebRoute::EndpointsIndex));
+        $this->post(route(WebRoute::Register), $this->validPayload())->assertRedirect(route(WebRoute::IndexEndpoints));
 
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [

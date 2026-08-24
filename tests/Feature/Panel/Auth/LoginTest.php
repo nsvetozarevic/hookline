@@ -24,7 +24,7 @@ class LoginTest extends TestCase
         $this->post(route(WebRoute::Login), [
             'email' => $user->email,
             'password' => 'password',
-        ])->assertRedirect(route(WebRoute::EndpointsIndex));
+        ])->assertRedirect(route(WebRoute::IndexEndpoints));
 
         $this->assertAuthenticatedAs($user);
     }

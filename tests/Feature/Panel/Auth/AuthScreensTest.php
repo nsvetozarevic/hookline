@@ -44,6 +44,6 @@ class AuthScreensTest extends TestCase
 
         $this->actingAs($user)
             ->get(route(WebRoute::ShowLogin))
-            ->assertRedirect(route(WebRoute::EndpointsIndex));
+            ->assertRedirect(route(WebRoute::IndexEndpoints));
     }
 }

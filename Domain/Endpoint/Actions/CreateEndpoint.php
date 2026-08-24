@@ -13,7 +13,7 @@ class CreateEndpoint
     public function handle(CreateEndpointData $createEndpointData): Endpoint
     {
         $endpoint = new Endpoint();
-        
+
         $endpoint->user_id = $createEndpointData->userId;
         $endpoint->name = $createEndpointData->name;
         $endpoint->provider = $createEndpointData->provider;

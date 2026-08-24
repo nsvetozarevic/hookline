@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Interfaces\Panel\Livewire\Endpoints;
 
+use App\Routing\WebRoute;
 use Domain\Endpoint\Actions\CreateEndpoint;
 use Domain\Endpoint\Data\CreateEndpointData;
 use Illuminate\View\View;
@@ -30,12 +31,12 @@ class IndexEndpointComponent extends Component
     {
         $this->form->validate();
 
-        $createEndpoint->handle(new CreateEndpointData(
+        $endpoint = $createEndpoint->handle(new CreateEndpointData(
             userId: user()->id,
             name: $this->form->name,
             provider: $this->form->provider !== '' ? $this->form->provider : null,
         ));
 
-        $this->form->reset();
+        $this->redirect(route(WebRoute::ShowEndpoints, $endpoint));
     }
 }

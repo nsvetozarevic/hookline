@@ -21,7 +21,7 @@ class IndexEndpointComponentTest extends TestCase
     #[Test]
     public function it_redirects_guests_to_login(): void
     {
-        $this->get(route(WebRoute::EndpointsIndex))
+        $this->get(route(WebRoute::IndexEndpoints))
             ->assertRedirect(route(WebRoute::ShowLogin));
     }
 
@@ -31,7 +31,7 @@ class IndexEndpointComponentTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($user)
-            ->get(route(WebRoute::EndpointsIndex))
+            ->get(route(WebRoute::IndexEndpoints))
             ->assertOk()
             ->assertSee('Endpoints', false);
     }
@@ -41,13 +41,14 @@ class IndexEndpointComponentTest extends TestCase
     {
         $user = User::factory()->create();
         $other = User::factory()->create();
-        Endpoint::factory()->for($user)->create(['name' => 'Stripe']);
+        $endpoint = Endpoint::factory()->for($user)->create(['name' => 'Stripe']);
         Endpoint::factory()->for($other)->create(['name' => 'GitHub']);
 
         $this->actingAs($user);
 
         Livewire::test(IndexEndpointComponent::class)
             ->assertSee('Stripe')
+            ->assertSee(route(WebRoute::ShowEndpoints, $endpoint), false)
             ->assertDontSee('GitHub');
     }
 
@@ -58,15 +59,15 @@ class IndexEndpointComponentTest extends TestCase
 
         $this->actingAs($user);
 
-        Livewire::test(IndexEndpointComponent::class)
+        $component = Livewire::test(IndexEndpointComponent::class)
             ->set('form.name', 'Stripe')
             ->set('form.provider', 'stripe')
             ->call('createEndpoint')
-            ->assertHasNoErrors()
-            ->assertSet('form.name', '')
-            ->assertSet('form.provider', '');
+            ->assertHasNoErrors();
 
         $endpoint = Endpoint::query()->sole();
+
+        $component->assertRedirect(route(WebRoute::ShowEndpoints, $endpoint));
 
         $this->assertSame($user->id, $endpoint->user_id);
         $this->assertSame('Stripe', $endpoint->name);

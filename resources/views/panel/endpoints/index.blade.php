@@ -1,3 +1,5 @@
+@use(App\Routing\WebRoute)
+
 <div>
     <h1 class="text-xl text-zinc-50">Endpoints</h1>
 
@@ -41,7 +43,7 @@
         <ul class="mt-10 space-y-3">
             @foreach ($endpoints as $endpoint)
                 <li class="border border-zinc-800 px-3 py-2">
-                    <span class="text-zinc-50">{{ $endpoint->name }}</span>
+                    <a href="{{ route(WebRoute::ShowEndpoints, $endpoint) }}" class="text-zinc-50 underline">{{ $endpoint->name }}</a>
                     @if ($endpoint->provider)
                         <span class="text-zinc-400"> · {{ $endpoint->provider }}</span>
                     @endif

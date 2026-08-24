@@ -29,7 +29,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::loginView(fn () => app(Login::class)());
         Fortify::registerView(fn () => app(Register::class)());
 
-        RedirectIfAuthenticated::redirectUsing(fn () => route(WebRoute::EndpointsIndex));
+        RedirectIfAuthenticated::redirectUsing(fn () => route(WebRoute::IndexEndpoints));
 
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower((string) $request->input(Fortify::username())).'|'.$request->ip());

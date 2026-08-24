@@ -12,7 +12,7 @@
     <body class="min-h-full bg-zinc-950 text-zinc-100 antialiased">
         <div class="mx-auto max-w-2xl px-4 py-16 font-mono text-sm">
             <header class="mb-10 flex items-center justify-between gap-4">
-                <a href="{{ auth()->check() ? route(WebRoute::EndpointsIndex) : route(WebRoute::ShowLogin) }}" class="text-zinc-50">{{ config('app.name', 'Hookline') }}</a>
+                <a href="{{ auth()->check() ? route(WebRoute::IndexEndpoints) : route(WebRoute::ShowLogin) }}" class="text-zinc-50">{{ config('app.name', 'Hookline') }}</a>
                 @auth
                     <form method="POST" action="{{ route(WebRoute::Logout) }}" class="flex items-center gap-4">
                         @csrf
