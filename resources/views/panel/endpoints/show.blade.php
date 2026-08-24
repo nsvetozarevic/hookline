@@ -1,4 +1,5 @@
 @use(App\Routing\WebRoute)
+@use(Illuminate\Support\Str)
 
 <div
     x-data="{
@@ -58,4 +59,31 @@
   -H 'X-Hookline-Event-Id: evt_demo' \
   -d '{"ok":true}'</pre>
     <p class="mt-3 text-zinc-400">Compute the signature as in README.md: HMAC-SHA256 of timestamp + "." + raw body, keyed with this signing secret.</p>
+
+    <h2 class="mt-10 text-zinc-50">Events</h2>
+    @if ($endpointEvents->isEmpty())
+        <p class="mt-4 text-zinc-400">No events yet — try the curl above.</p>
+    @else
+        <ul class="mt-4 space-y-2">
+            @foreach ($endpointEvents as $endpointEvent)
+                <li wire:key="endpoint-event-{{ $endpointEvent->id }}" class="border border-zinc-800 px-3 py-2 text-zinc-400">
+                    <span class="text-zinc-50">#{{ $endpointEvent->id }}</span>
+                    <span title="{{ $endpointEvent->deduplication_key }}"> · {{ Str::limit($endpointEvent->deduplication_key, 32) }}</span>
+                    <span> · {{ $endpointEvent->headers['content-type'] ?? '—' }}</span>
+                    <span> · {{ $endpointEvent->created_at->toDateTimeString() }}</span>
+                    <span> · {{ strlen($endpointEvent->payload) }} B</span>
+                </li>
+            @endforeach
+        </ul>
+        @if ($endpointEvents->hasPages())
+            <div class="mt-4 flex gap-4">
+                @if (! $endpointEvents->onFirstPage())
+                    <button type="button" wire:click="previousPage" class="text-zinc-50 underline">Previous</button>
+                @endif
+                @if ($endpointEvents->hasMorePages())
+                    <button type="button" wire:click="nextPage" class="text-zinc-50 underline">Next</button>
+                @endif
+            </div>
+        @endif
+    @endif
 </div>
