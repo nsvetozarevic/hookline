@@ -18,6 +18,11 @@ class ShowEndpointComponent extends Component
 
     public Endpoint $endpoint;
 
+    public function mount(): void
+    {
+        $this->authorize('view', $this->endpoint);
+    }
+
     public function render(): View
     {
         return view('panel.endpoints.show', [

@@ -16,6 +16,11 @@ class ShowEndpointEventComponent extends Component
 
     public EndpointEvent $endpointEvent;
 
+    public function mount(): void
+    {
+        $this->authorize('view', $this->endpointEvent->endpoint);
+    }
+
     public function render(): View
     {
         $this->endpointEvent->loadMissing('endpoint');
