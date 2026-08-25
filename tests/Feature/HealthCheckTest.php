@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class HealthCheckTest extends TestCase
 {
-    public function test_health_endpoint_returns_successful_response(): void
+    #[Test]
+    public function health_endpoint_returns_successful_response(): void
     {
         $response = $this->get('/up');
 

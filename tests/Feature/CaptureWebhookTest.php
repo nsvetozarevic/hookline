@@ -4,24 +4,28 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Routing\WebRoute;
 use Domain\Endpoint\Models\Endpoint;
 use Domain\Endpoint\Models\EndpointEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class CaptureWebhookTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_unknown_endpoint_token_returns_not_found(): void
+    #[Test]
+    public function unknown_endpoint_token_returns_not_found(): void
     {
         $response = $this->postCapture('missing-token', '{}', $this->signedHeaders('secret', '{}'));
 
         $response->assertNotFound();
     }
 
-    public function test_capture_is_rate_limited(): void
+    #[Test]
+    public function capture_is_rate_limited(): void
     {
         config(['hookline.capture.rate_limit_per_minute' => 1]);
 
@@ -33,7 +37,8 @@ class CaptureWebhookTest extends TestCase
             ->assertHeader('Retry-After');
     }
 
-    public function test_inactive_endpoint_returns_not_found(): void
+    #[Test]
+    public function inactive_endpoint_returns_not_found(): void
     {
         $endpoint = Endpoint::factory()->inactive()->create();
         $body = '{"ok":true}';
@@ -49,7 +54,8 @@ class CaptureWebhookTest extends TestCase
         $this->assertDatabaseCount('endpoint_events', 0);
     }
 
-    public function test_invalid_signature_is_rejected(): void
+    #[Test]
+    public function invalid_signature_is_rejected(): void
     {
         $endpoint = Endpoint::factory()->create();
         $body = '{"ok":true}';
@@ -64,7 +70,8 @@ class CaptureWebhookTest extends TestCase
         $this->assertDatabaseCount('endpoint_events', 0);
     }
 
-    public function test_stale_timestamp_is_rejected(): void
+    #[Test]
+    public function stale_timestamp_is_rejected(): void
     {
         $endpoint = Endpoint::factory()->create();
         $body = '{"ok":true}';
@@ -80,7 +87,8 @@ class CaptureWebhookTest extends TestCase
         $this->assertDatabaseCount('endpoint_events', 0);
     }
 
-    public function test_future_timestamp_is_rejected(): void
+    #[Test]
+    public function future_timestamp_is_rejected(): void
     {
         $endpoint = Endpoint::factory()->create();
         $body = '{"ok":true}';
@@ -96,7 +104,8 @@ class CaptureWebhookTest extends TestCase
         $this->assertDatabaseCount('endpoint_events', 0);
     }
 
-    public function test_payload_over_size_cap_is_rejected(): void
+    #[Test]
+    public function payload_over_size_cap_is_rejected(): void
     {
         config(['hookline.capture.max_body_kilobytes' => 1]);
 
@@ -113,7 +122,8 @@ class CaptureWebhookTest extends TestCase
         $this->assertDatabaseCount('endpoint_events', 0);
     }
 
-    public function test_overlong_hookline_event_id_is_rejected(): void
+    #[Test]
+    public function overlong_hookline_event_id_is_rejected(): void
     {
         $endpoint = Endpoint::factory()->create();
         $body = '{"ok":true}';
@@ -134,7 +144,8 @@ class CaptureWebhookTest extends TestCase
         $this->assertDatabaseCount('endpoint_events', 0);
     }
 
-    public function test_valid_capture_persists_event_and_returns_accepted(): void
+    #[Test]
+    public function valid_capture_persists_event_and_returns_accepted(): void
     {
         $endpoint = Endpoint::factory()->create();
         $body = '{"ok":true}';
@@ -159,7 +170,8 @@ class CaptureWebhookTest extends TestCase
         ]);
     }
 
-    public function test_captured_headers_follow_config_and_omit_the_signature(): void
+    #[Test]
+    public function captured_headers_follow_config_and_omit_the_signature(): void
     {
         config(['hookline.capture.captured_header_names' => ['content-type', 'x-hookline-event-id']]);
 
@@ -187,7 +199,8 @@ class CaptureWebhookTest extends TestCase
         );
     }
 
-    public function test_duplicate_capture_returns_the_same_event(): void
+    #[Test]
+    public function duplicate_capture_returns_the_same_event(): void
     {
         $endpoint = Endpoint::factory()->create();
         $body = '{"ok":true}';
@@ -213,7 +226,8 @@ class CaptureWebhookTest extends TestCase
         $this->assertDatabaseCount('endpoint_events', 1);
     }
 
-    public function test_duplicate_event_id_with_a_different_body_keeps_the_original_payload(): void
+    #[Test]
+    public function duplicate_event_id_with_a_different_body_keeps_the_original_payload(): void
     {
         $endpoint = Endpoint::factory()->create();
         $originalPayload = '{"ok":true}';
@@ -246,7 +260,8 @@ class CaptureWebhookTest extends TestCase
         ]);
     }
 
-    public function test_missing_hookline_event_id_uses_body_hash_as_deduplication_key(): void
+    #[Test]
+    public function missing_hookline_event_id_uses_body_hash_as_deduplication_key(): void
     {
         $endpoint = Endpoint::factory()->create();
         $body = '{"ok":true}';
@@ -278,7 +293,7 @@ class CaptureWebhookTest extends TestCase
     {
         return $this->call(
             method: 'POST',
-            uri: '/capture/'.$captureToken,
+            uri: route(WebRoute::Capture, ['captureToken' => $captureToken], absolute: false),
             server: $this->transformHeadersToServerVars($headers),
             content: $body,
         );

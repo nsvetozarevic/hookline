@@ -62,6 +62,17 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Build assets
+        run: |
+          npm ci
+          npm run build
+
       - name: Prepare Laravel
         run: |
           cp .env.example .env

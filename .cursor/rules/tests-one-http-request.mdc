@@ -33,3 +33,16 @@ config(['hookline.capture.rate_limit_per_minute' => 1]);
 RateLimiter::hit(md5('capture'.$token));
 $this->postCapture($token, $body, $headers)->assertTooManyRequests();
 ```
+
+Livewire: one `Livewire::test()` **or** one HTTP call, not both as setup. `->call()` / `->set()` on that testable is fine — that is the component under test, not a second request used to seed state.
+
+```php
+// BAD — HTTP to create the row, then Livewire
+$this->actingAs($user);
+$this->post('/endpoints', ['name' => 'Stripe']);
+Livewire::test(Index::class)->assertSee('Stripe');
+
+// GOOD — factory, then one Livewire::test()
+Endpoint::factory()->for($user)->create(['name' => 'Stripe']);
+Livewire::test(Index::class)->assertSee('Stripe');
+```

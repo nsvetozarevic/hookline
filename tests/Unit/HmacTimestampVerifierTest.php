@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use Domain\Endpoint\Utility\HmacTimestampVerifier;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class HmacTimestampVerifierTest extends TestCase
@@ -18,7 +19,8 @@ class HmacTimestampVerifierTest extends TestCase
         $this->hmacTimestampVerifier = new HmacTimestampVerifier();
     }
 
-    public function test_valid_signature_passes(): void
+    #[Test]
+    public function valid_signature_passes(): void
     {
         $signingSecret = 'test-secret';
         $timestamp = '1700000000';
@@ -37,7 +39,8 @@ class HmacTimestampVerifierTest extends TestCase
         );
     }
 
-    public function test_wrong_signature_fails(): void
+    #[Test]
+    public function wrong_signature_fails(): void
     {
         $this->assertFalse(
             $this->hmacTimestampVerifier->verify(
@@ -51,7 +54,8 @@ class HmacTimestampVerifierTest extends TestCase
         );
     }
 
-    public function test_stale_timestamp_fails(): void
+    #[Test]
+    public function stale_timestamp_fails(): void
     {
         $signingSecret = 'test-secret';
         $timestamp = '1700000000';
@@ -70,7 +74,8 @@ class HmacTimestampVerifierTest extends TestCase
         );
     }
 
-    public function test_future_timestamp_fails(): void
+    #[Test]
+    public function future_timestamp_fails(): void
     {
         $signingSecret = 'test-secret';
         $timestamp = '1700000301';
@@ -89,7 +94,8 @@ class HmacTimestampVerifierTest extends TestCase
         );
     }
 
-    public function test_empty_signing_secret_fails(): void
+    #[Test]
+    public function empty_signing_secret_fails(): void
     {
         $timestamp = '1700000000';
         $rawRequestBody = '{}';
@@ -107,7 +113,8 @@ class HmacTimestampVerifierTest extends TestCase
         );
     }
 
-    public function test_empty_signature_fails(): void
+    #[Test]
+    public function empty_signature_fails(): void
     {
         $this->assertFalse(
             $this->hmacTimestampVerifier->verify(
@@ -121,7 +128,8 @@ class HmacTimestampVerifierTest extends TestCase
         );
     }
 
-    public function test_non_digit_timestamp_fails(): void
+    #[Test]
+    public function non_digit_timestamp_fails(): void
     {
         $this->assertFalse(
             $this->hmacTimestampVerifier->verify('secret', 'not-a-time', '{}', 'abc', 300, time()),
