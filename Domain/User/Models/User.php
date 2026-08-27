@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Domain\User\Models;
 
-use Database\Factories\UserFactory;
 use Domain\Endpoint\Models\Endpoint;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -17,7 +16,7 @@ use Illuminate\Notifications\Notifiable;
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
+    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
     use Notifiable;
 
@@ -27,11 +26,6 @@ class User extends Authenticatable
     public function endpoints(): HasMany
     {
         return $this->hasMany(Endpoint::class);
-    }
-
-    protected static function newFactory(): UserFactory
-    {
-        return UserFactory::new();
     }
 
     /**

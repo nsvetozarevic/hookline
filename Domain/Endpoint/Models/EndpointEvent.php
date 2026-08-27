@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Domain\Endpoint\Models;
 
-use Database\Factories\EndpointEventFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['endpoint_id', 'deduplication_key', 'headers', 'payload'])]
 class EndpointEvent extends Model
 {
-    /** @use HasFactory<EndpointEventFactory> */
+    /** @use HasFactory<\Database\Factories\EndpointEventFactory> */
     use HasFactory;
 
     /**
@@ -25,11 +24,6 @@ class EndpointEvent extends Model
     public function endpoint(): BelongsTo
     {
         return $this->belongsTo(Endpoint::class);
-    }
-
-    protected static function newFactory(): EndpointEventFactory
-    {
-        return EndpointEventFactory::new();
     }
 
     /**

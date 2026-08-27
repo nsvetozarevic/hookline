@@ -2,12 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Domain\Endpoint\Models;
+namespace Domain\Delivery\Models;
 
-use Domain\Endpoint\Policies\EndpointPolicy;
-use Domain\User\Models\User;
+use Domain\Endpoint\Models\Endpoint;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,39 +13,33 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['user_id', 'name', 'capture_token', 'provider', 'is_active'])]
-#[UsePolicy(EndpointPolicy::class)]
-class Endpoint extends Model
+/**
+ * @property array<string, string>|null $headers
+ */
+#[Fillable(['endpoint_id', 'url', 'is_active', 'timeout_seconds', 'max_attempts', 'headers'])]
+class Destination extends Model
 {
-    /** @use HasFactory<\Database\Factories\EndpointFactory> */
+    /** @use HasFactory<\Database\Factories\DestinationFactory> */
     use HasFactory;
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Endpoint, $this>
      */
-    public function user(): BelongsTo
+    public function endpoint(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Endpoint::class);
     }
 
     /**
-     * @return HasMany<EndpointEvent, $this>
-     */
-    public function endpointEvents(): HasMany
-    {
-        return $this->hasMany(EndpointEvent::class);
-    }
-
-    /**
-     * @return HasMany<EndpointSigningSecret, $this>
+     * @return HasMany<DestinationSigningSecret, $this>
      */
     public function signingSecrets(): HasMany
     {
-        return $this->hasMany(EndpointSigningSecret::class);
+        return $this->hasMany(DestinationSigningSecret::class);
     }
 
     /**
-     * @return HasMany<EndpointSigningSecret, $this>
+     * @return HasMany<DestinationSigningSecret, $this>
      */
     public function unexpiredSigningSecrets(): HasMany
     {
@@ -59,11 +51,11 @@ class Endpoint extends Model
     }
 
     /**
-     * @return HasOne<EndpointSigningSecret, $this>
+     * @return HasOne<DestinationSigningSecret, $this>
      */
     public function currentSigningSecret(): HasOne
     {
-        return $this->hasOne(EndpointSigningSecret::class)->whereNull('expires_at');
+        return $this->hasOne(DestinationSigningSecret::class)->whereNull('expires_at');
     }
 
     /**
@@ -73,6 +65,7 @@ class Endpoint extends Model
     {
         return [
             'is_active' => 'boolean',
+            'headers' => 'array',
         ];
     }
 }

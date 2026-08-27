@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Domain\Endpoint\Models;
+namespace Domain\Delivery\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -15,19 +15,19 @@ use Illuminate\Support\Carbon;
  * @property string $secret
  * @property Carbon|null $expires_at
  */
-#[Fillable(['endpoint_id', 'secret', 'expires_at'])]
+#[Fillable(['destination_id', 'secret', 'expires_at'])]
 #[Hidden(['secret'])]
-class EndpointSigningSecret extends Model
+class DestinationSigningSecret extends Model
 {
-    /** @use HasFactory<\Database\Factories\EndpointSigningSecretFactory> */
+    /** @use HasFactory<\Database\Factories\DestinationSigningSecretFactory> */
     use HasFactory;
 
     /**
-     * @return BelongsTo<Endpoint, $this>
+     * @return BelongsTo<Destination, $this>
      */
-    public function endpoint(): BelongsTo
+    public function destination(): BelongsTo
     {
-        return $this->belongsTo(Endpoint::class);
+        return $this->belongsTo(Destination::class);
     }
 
     /**

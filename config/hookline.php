@@ -20,4 +20,8 @@ return [
     'webhooks' => [
         'secret_rotation_grace_hours' => 48,
     ],
+    'delivery' => [
+        'default_timeout_seconds' => 5,
+        'default_max_attempts' => 8,
+    ],
 ];
