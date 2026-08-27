@@ -54,7 +54,68 @@ class ShowEndpointComponentTest extends TestCase
             ->assertSee('Stripe')
             ->assertSee('stripe')
             ->assertSee($endpoint->capture_token)
-            ->assertSee($endpoint->signing_secret)
+            ->assertSee($endpoint->currentSigningSecret->secret)
             ->assertSee(route(WebRoute::Capture, $endpoint->capture_token), false);
+    }
+
+    #[Test]
+    public function rotating_the_signing_secret_keeps_the_previous_row(): void
+    {
+        $this->freezeTime();
+
+        $user = User::factory()->create();
+        $endpoint = Endpoint::factory()->for($user)->create();
+        $originalSigningSecret = $endpoint->currentSigningSecret;
+
+        $this->actingAs($user);
+
+        $component = Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
+            ->call('rotateSigningSecret')
+            ->assertOk();
+
+        $endpoint->unsetRelation('currentSigningSecret');
+        $currentSigningSecret = $endpoint->currentSigningSecret;
+        $originalSigningSecret = $originalSigningSecret->fresh();
+
+        $this->assertNotSame($originalSigningSecret->secret, $currentSigningSecret->secret);
+        $this->assertNull($currentSigningSecret->expires_at);
+        $this->assertEquals(now()->addHours(48)->startOfSecond(), $originalSigningSecret->expires_at);
+        $this->assertDatabaseCount('endpoint_signing_secrets', 2);
+
+        $component
+            ->assertSee($currentSigningSecret->secret)
+            ->assertSee($originalSigningSecret->secret)
+            ->assertSee($originalSigningSecret->expires_at->toDateTimeString());
+    }
+
+    #[Test]
+    public function rotating_twice_keeps_every_unexpired_secret(): void
+    {
+        $user = User::factory()->create();
+        $endpoint = Endpoint::factory()->for($user)->create();
+
+        $this->actingAs($user);
+
+        Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
+            ->call('rotateSigningSecret')
+            ->call('rotateSigningSecret')
+            ->assertOk();
+
+        $this->assertDatabaseCount('endpoint_signing_secrets', 3);
+        $this->assertSame(1, $endpoint->signingSecrets()->whereNull('expires_at')->count());
+        $this->assertSame(2, $endpoint->signingSecrets()->whereNotNull('expires_at')->count());
+    }
+
+    #[Test]
+    public function another_user_cannot_rotate_an_endpoint(): void
+    {
+        $owner = User::factory()->create();
+        $secondUser = User::factory()->create();
+        $endpoint = Endpoint::factory()->for($owner)->create();
+
+        $this->actingAs($secondUser);
+
+        Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
+            ->assertForbidden();
     }
 }

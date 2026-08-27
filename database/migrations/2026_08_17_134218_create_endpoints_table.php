@@ -14,7 +14,6 @@ return new class () extends Migration {
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('capture_token', 64)->unique();
-            $table->string('signing_secret', 128);
             $table->string('provider')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();

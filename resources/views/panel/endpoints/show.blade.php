@@ -45,10 +45,22 @@
         <div>
             <dt class="text-zinc-400">Signing secret</dt>
             <dd class="mt-1 flex items-start justify-between gap-4">
-                <code class="break-all text-zinc-50">{{ $endpoint->signing_secret }}</code>
-                <button type="button" class="shrink-0 text-zinc-50 underline" x-on:click="copy('secret', @js($endpoint->signing_secret))" x-text="copied === 'secret' ? 'Copied' : 'Copy'"></button>
+                <code class="break-all text-zinc-50">{{ $currentSigningSecret->secret }}</code>
+                <button type="button" class="shrink-0 text-zinc-50 underline" x-on:click="copy('secret', @js($currentSigningSecret->secret))" x-text="copied === 'secret' ? 'Copied' : 'Copy'"></button>
             </dd>
+            <button type="button" wire:click="rotateSigningSecret" class="mt-2 border border-zinc-500 px-4 py-2 text-zinc-50 hover:bg-zinc-800">Rotate</button>
         </div>
+
+        @foreach ($previousSigningSecrets as $previousSigningSecret)
+            <div wire:key="previous-signing-secret-{{ $previousSigningSecret->id }}">
+                <dt class="text-zinc-400">Previous signing secret</dt>
+                <dd class="mt-1 flex items-start justify-between gap-4">
+                    <code class="break-all text-zinc-50">{{ $previousSigningSecret->secret }}</code>
+                    <button type="button" class="shrink-0 text-zinc-50 underline" x-on:click="copy('previous-{{ $previousSigningSecret->id }}', @js($previousSigningSecret->secret))" x-text="copied === 'previous-{{ $previousSigningSecret->id }}' ? 'Copied' : 'Copy'"></button>
+                </dd>
+                <p class="mt-1 text-zinc-400">Expires {{ $previousSigningSecret->expires_at->toDateTimeString() }}</p>
+            </div>
+        @endforeach
     </dl>
 
     <h2 class="mt-10 text-zinc-50">Send a test</h2>

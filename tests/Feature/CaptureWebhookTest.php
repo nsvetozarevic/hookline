@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Routing\WebRoute;
 use Domain\Endpoint\Models\Endpoint;
 use Domain\Endpoint\Models\EndpointEvent;
+use Domain\Endpoint\Models\EndpointSigningSecret;
 use Domain\Endpoint\Utility\SigningSecret;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
@@ -29,7 +30,7 @@ class CaptureWebhookTest extends TestCase
             $endpoint->capture_token,
             $body,
             $this->signedHeaders(
-                signingSecret: $endpoint->signing_secret,
+                signingSecret: $endpoint->currentSigningSecret->secret,
                 body: $body,
                 webhookId: 'msg_1',
             ),
@@ -51,7 +52,7 @@ class CaptureWebhookTest extends TestCase
         $endpoint = Endpoint::factory()->create();
         $body = '{"ok":true}';
         $headers = $this->signedHeaders(
-            signingSecret: $endpoint->signing_secret,
+            signingSecret: $endpoint->currentSigningSecret->secret,
             body: $body,
             webhookId: 'msg_list',
         );
@@ -81,7 +82,7 @@ class CaptureWebhookTest extends TestCase
         $endpoint = Endpoint::factory()->create();
         $body = '{"ok":true}';
         $headers = $this->signedHeaders(
-            signingSecret: $endpoint->signing_secret,
+            signingSecret: $endpoint->currentSigningSecret->secret,
             body: $body,
             webhookId: 'msg_headers',
         );
@@ -115,7 +116,7 @@ class CaptureWebhookTest extends TestCase
             $endpoint->capture_token,
             $body,
             $this->signedHeaders(
-                signingSecret: $endpoint->signing_secret,
+                signingSecret: $endpoint->currentSigningSecret->secret,
                 body: $body,
                 webhookId: 'msg_dup',
             ),
@@ -144,7 +145,7 @@ class CaptureWebhookTest extends TestCase
             $endpoint->capture_token,
             $newBody,
             $this->signedHeaders(
-                signingSecret: $endpoint->signing_secret,
+                signingSecret: $endpoint->currentSigningSecret->secret,
                 body: $newBody,
                 webhookId: 'msg_dup',
             ),
@@ -159,6 +160,52 @@ class CaptureWebhookTest extends TestCase
             'deduplication_key' => 'msg_dup',
             'payload' => $originalPayload,
         ]);
+    }
+
+    #[Test]
+    public function capture_signed_with_an_unexpired_previous_secret_is_accepted(): void
+    {
+        $endpoint = Endpoint::factory()->create();
+        $previousSigningSecret = EndpointSigningSecret::factory()->for($endpoint)->create([
+            'expires_at' => now()->addHours(48),
+        ]);
+        $body = '{"ok":true}';
+
+        $response = $this->postCapture(
+            $endpoint->capture_token,
+            $body,
+            $this->signedHeaders(
+                signingSecret: $previousSigningSecret->secret,
+                body: $body,
+                webhookId: 'msg_rotated',
+            ),
+        );
+
+        $response->assertAccepted()
+            ->assertJsonPath('deduplication_key', 'msg_rotated');
+    }
+
+    #[Test]
+    public function capture_signed_with_the_current_secret_is_accepted_during_the_grace_window(): void
+    {
+        $endpoint = Endpoint::factory()->create();
+        EndpointSigningSecret::factory()->for($endpoint)->create([
+            'expires_at' => now()->addHours(48),
+        ]);
+        $body = '{"ok":true}';
+
+        $response = $this->postCapture(
+            $endpoint->capture_token,
+            $body,
+            $this->signedHeaders(
+                signingSecret: $endpoint->currentSigningSecret->secret,
+                body: $body,
+                webhookId: 'msg_current_during_grace',
+            ),
+        );
+
+        $response->assertAccepted()
+            ->assertJsonPath('deduplication_key', 'msg_current_during_grace');
     }
 
     #[Test]
@@ -178,7 +225,7 @@ class CaptureWebhookTest extends TestCase
         $response = $this->postCapture(
             $endpoint->capture_token,
             $body,
-            $this->signedHeaders($endpoint->signing_secret, $body),
+            $this->signedHeaders($endpoint->currentSigningSecret->secret, $body),
         );
 
         $response->assertNotFound();
@@ -206,7 +253,7 @@ class CaptureWebhookTest extends TestCase
 
         $endpoint = Endpoint::factory()->create();
         $body = str_repeat('a', 1025);
-        $headers = $this->signedHeaders($endpoint->signing_secret, $body);
+        $headers = $this->signedHeaders($endpoint->currentSigningSecret->secret, $body);
         $headers['webhook-signature'] = 'v1,00';
 
         $response = $this->postCapture($endpoint->capture_token, $body, $headers);
@@ -220,7 +267,7 @@ class CaptureWebhookTest extends TestCase
     {
         $endpoint = Endpoint::factory()->create();
         $body = '{"ok":true}';
-        $headers = $this->signedHeaders($endpoint->signing_secret, $body);
+        $headers = $this->signedHeaders($endpoint->currentSigningSecret->secret, $body);
         $headers['webhook-signature'] = 'v1,00';
 
         $response = $this->postCapture($endpoint->capture_token, $body, $headers);
@@ -232,11 +279,38 @@ class CaptureWebhookTest extends TestCase
     }
 
     #[Test]
+    public function capture_signed_with_an_expired_previous_secret_is_rejected(): void
+    {
+        $endpoint = Endpoint::factory()->create();
+        $expiresAt = now()->addHours(48);
+        $previousSigningSecret = EndpointSigningSecret::factory()->for($endpoint)->create([
+            'expires_at' => $expiresAt,
+        ]);
+        $body = '{"ok":true}';
+
+        $this->travelTo($expiresAt->addSecond());
+
+        $response = $this->postCapture(
+            $endpoint->capture_token,
+            $body,
+            $this->signedHeaders(
+                signingSecret: $previousSigningSecret->secret,
+                body: $body,
+                webhookId: 'msg_expired',
+            ),
+        );
+
+        $response->assertUnauthorized()
+            ->assertJson(['message' => 'Invalid webhook signature.']);
+        $this->assertDatabaseCount('endpoint_events', 0);
+    }
+
+    #[Test]
     public function missing_webhook_id_is_rejected(): void
     {
         $endpoint = Endpoint::factory()->create();
         $body = '{"ok":true}';
-        $headers = $this->signedHeaders($endpoint->signing_secret, $body);
+        $headers = $this->signedHeaders($endpoint->currentSigningSecret->secret, $body);
         unset($headers['webhook-id']);
 
         $response = $this->postCapture($endpoint->capture_token, $body, $headers);
@@ -253,7 +327,7 @@ class CaptureWebhookTest extends TestCase
         $endpoint = Endpoint::factory()->create();
         $body = '{"ok":true}';
         $headers = $this->signedHeaders(
-            signingSecret: $endpoint->signing_secret,
+            signingSecret: $endpoint->currentSigningSecret->secret,
             body: $body,
             webhookId: 'msg_a',
         );
@@ -277,7 +351,7 @@ class CaptureWebhookTest extends TestCase
         $response = $this->postCapture(
             $endpoint->capture_token,
             $body,
-            $this->signedHeaders($endpoint->signing_secret, $body, $stale),
+            $this->signedHeaders($endpoint->currentSigningSecret->secret, $body, $stale),
         );
 
         $response->assertUnauthorized();
@@ -294,7 +368,7 @@ class CaptureWebhookTest extends TestCase
         $response = $this->postCapture(
             $endpoint->capture_token,
             $body,
-            $this->signedHeaders($endpoint->signing_secret, $body, $future),
+            $this->signedHeaders($endpoint->currentSigningSecret->secret, $body, $future),
         );
 
         $response->assertUnauthorized();
@@ -307,7 +381,7 @@ class CaptureWebhookTest extends TestCase
         $endpoint = Endpoint::factory()->create();
         $body = '{"ok":true}';
         $headers = $this->signedHeaders(
-            signingSecret: $endpoint->signing_secret,
+            signingSecret: $endpoint->currentSigningSecret->secret,
             body: $body,
             webhookId: str_repeat('a', 256),
         );
@@ -331,7 +405,7 @@ class CaptureWebhookTest extends TestCase
             $endpoint->capture_token,
             $body,
             $this->signedHeaders(
-                signingSecret: $endpoint->signing_secret,
+                signingSecret: $endpoint->currentSigningSecret->secret,
                 body: $body,
                 webhookId: $webhookId,
             ),

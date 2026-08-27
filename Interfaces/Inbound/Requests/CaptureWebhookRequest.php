@@ -85,6 +85,7 @@ class CaptureWebhookRequest extends FormRequest
     private function resolveActiveEndpoint(): Endpoint
     {
         return Endpoint::query()
+            ->with('unexpiredSigningSecrets')
             ->where('capture_token', $this->route('captureToken'))
             ->where('is_active', true)
             ->firstOrFail();
@@ -102,19 +103,28 @@ class CaptureWebhookRequest extends FormRequest
     private function ensureSignatureIsValid(): void
     {
         $webhookSignatureVerifier = new WebhookSignatureVerifier();
+        $webhookId = $this->header('webhook-id', '');
+        $webhookTimestamp = $this->header('webhook-timestamp', '');
+        $rawRequestBody = $this->getContent();
+        $webhookSignature = $this->header('webhook-signature', '');
+        $toleranceSeconds = (int) config('hookline.capture.timestamp_tolerance_seconds');
 
-        $isValid = $webhookSignatureVerifier->verify(
-            $this->endpoint()->signing_secret,
-            $this->header('webhook-id', ''),
-            $this->header('webhook-timestamp', ''),
-            $this->getContent(),
-            $this->header('webhook-signature', ''),
-            (int) config('hookline.capture.timestamp_tolerance_seconds'),
-        );
+        foreach ($this->endpoint()->unexpiredSigningSecrets as $signingSecret) {
+            $isValid = $webhookSignatureVerifier->verify(
+                $signingSecret->secret,
+                $webhookId,
+                $webhookTimestamp,
+                $rawRequestBody,
+                $webhookSignature,
+                $toleranceSeconds,
+            );
 
-        if (! $isValid) {
-            abort(response()->json(['message' => 'Invalid webhook signature.'], 401));
+            if ($isValid) {
+                return;
+            }
         }
+
+        abort(response()->json(['message' => 'Invalid webhook signature.'], 401));
     }
 
     private function ensureWebhookIdIsWithinLengthLimit(): void

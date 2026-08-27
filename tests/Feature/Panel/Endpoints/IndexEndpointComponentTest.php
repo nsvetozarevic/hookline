@@ -75,9 +75,14 @@ class IndexEndpointComponentTest extends TestCase
         $this->assertTrue($endpoint->is_active);
         $this->assertSame(32, strlen($endpoint->capture_token));
         $this->assertSame(strtolower($endpoint->capture_token), $endpoint->capture_token);
-        $decodedSigningSecret = SigningSecret::decode($endpoint->signing_secret);
+        $decodedSigningSecret = SigningSecret::decode($endpoint->currentSigningSecret->secret);
         $this->assertNotNull($decodedSigningSecret);
         $this->assertSame(32, strlen($decodedSigningSecret));
+        $this->assertDatabaseCount('endpoint_signing_secrets', 1);
+        $this->assertDatabaseHas('endpoint_signing_secrets', [
+            'endpoint_id' => $endpoint->id,
+            'expires_at' => null,
+        ]);
     }
 
     /**

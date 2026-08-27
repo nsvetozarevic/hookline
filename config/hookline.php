@@ -17,4 +17,7 @@ return [
             'webhook-timestamp',
         ],
     ],
+    'webhooks' => [
+        'secret_rotation_grace_hours' => 48,
+    ],
 ];

@@ -8,15 +8,15 @@ use Database\Factories\EndpointFactory;
 use Domain\Endpoint\Policies\EndpointPolicy;
 use Domain\User\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['user_id', 'name', 'capture_token', 'signing_secret', 'provider', 'is_active'])]
-#[Hidden(['signing_secret'])]
+#[Fillable(['user_id', 'name', 'capture_token', 'provider', 'is_active'])]
 #[UsePolicy(EndpointPolicy::class)]
 class Endpoint extends Model
 {
@@ -37,6 +37,34 @@ class Endpoint extends Model
     public function endpointEvents(): HasMany
     {
         return $this->hasMany(EndpointEvent::class);
+    }
+
+    /**
+     * @return HasMany<EndpointSigningSecret, $this>
+     */
+    public function signingSecrets(): HasMany
+    {
+        return $this->hasMany(EndpointSigningSecret::class);
+    }
+
+    /**
+     * @return HasMany<EndpointSigningSecret, $this>
+     */
+    public function unexpiredSigningSecrets(): HasMany
+    {
+        return $this->signingSecrets()
+            ->where(function (Builder $query): void {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            });
+    }
+
+    /**
+     * @return HasOne<EndpointSigningSecret, $this>
+     */
+    public function currentSigningSecret(): HasOne
+    {
+        return $this->hasOne(EndpointSigningSecret::class)->whereNull('expires_at');
     }
 
     protected static function newFactory(): EndpointFactory
