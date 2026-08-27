@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * @property string $secret
  * @property Carbon|null $expires_at
  */
 #[Fillable(['endpoint_id', 'secret', 'expires_at'])]
