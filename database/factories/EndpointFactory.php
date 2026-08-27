@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use Domain\Endpoint\Models\Endpoint;
+use Domain\Endpoint\Utility\SigningSecret;
 use Domain\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -25,7 +26,7 @@ class EndpointFactory extends Factory
             'user_id' => User::factory(),
             'name' => fake()->words(2, true),
             'capture_token' => Str::lower(Str::random(32)),
-            'signing_secret' => Str::lower(Str::random(64)),
+            'signing_secret' => SigningSecret::mint(),
             'is_active' => true,
         ];
     }

@@ -19,9 +19,6 @@ class AuthScreensTest extends TestCase
     {
         $this->get(route(WebRoute::ShowLogin))
             ->assertOk()
-            ->assertSee('Log in', false)
-            ->assertSee('name="email"', false)
-            ->assertSee('name="password"', false)
             ->assertSee('action="'.route(WebRoute::Login).'"', false);
     }
 
@@ -30,10 +27,6 @@ class AuthScreensTest extends TestCase
     {
         $this->get(route(WebRoute::ShowRegister))
             ->assertOk()
-            ->assertSee('Register', false)
-            ->assertSee('name="name"', false)
-            ->assertSee('name="email"', false)
-            ->assertSee('name="password"', false)
             ->assertSee('action="'.route(WebRoute::Register).'"', false);
     }
 

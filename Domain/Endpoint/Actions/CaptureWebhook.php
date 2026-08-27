@@ -15,19 +15,15 @@ class CaptureWebhook
     public function handle(CaptureWebhookData $captureWebhookData): CaptureWebhookResult
     {
         $endpoint = $captureWebhookData->endpoint;
-        $rawRequestBody = $captureWebhookData->rawRequestBody;
-        $deduplicationKey = $this->deduplicationKey(
-            $captureWebhookData->hooklineEventId,
-            $rawRequestBody,
-        );
+        $deduplicationKey = $captureWebhookData->webhookId;
 
         try {
-            DB::transaction(function () use ($endpoint, $captureWebhookData, $rawRequestBody, $deduplicationKey): void {
+            DB::transaction(function () use ($endpoint, $captureWebhookData, $deduplicationKey): void {
                 $endpointEvent = new EndpointEvent();
                 $endpointEvent->endpoint()->associate($endpoint);
                 $endpointEvent->deduplication_key = $deduplicationKey;
                 $endpointEvent->headers = $captureWebhookData->capturedHeaders;
-                $endpointEvent->payload = $rawRequestBody;
+                $endpointEvent->payload = $captureWebhookData->rawRequestBody;
                 $endpointEvent->save();
             });
 
@@ -35,14 +31,5 @@ class CaptureWebhook
         } catch (UniqueConstraintViolationException) {
             return CaptureWebhookResult::duplicate($deduplicationKey);
         }
-    }
-
-    private function deduplicationKey(?string $hooklineEventId, string $rawRequestBody): string
-    {
-        if ($hooklineEventId !== null) {
-            return $hooklineEventId;
-        }
-
-        return hash('sha256', $rawRequestBody);
     }
 }

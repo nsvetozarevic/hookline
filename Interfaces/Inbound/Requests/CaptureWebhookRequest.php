@@ -6,7 +6,7 @@ namespace Interfaces\Inbound\Requests;
 
 use Domain\Endpoint\Data\CaptureWebhookData;
 use Domain\Endpoint\Models\Endpoint;
-use Domain\Endpoint\Utility\HmacTimestampVerifier;
+use Domain\Endpoint\Utility\WebhookSignatureVerifier;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use LogicException;
@@ -41,7 +41,7 @@ class CaptureWebhookRequest extends FormRequest
 
             $this->ensurePayloadIsWithinSizeLimit();
             $this->ensureSignatureIsValid();
-            $this->ensureHooklineEventIdIsWithinLengthLimit();
+            $this->ensureWebhookIdIsWithinLengthLimit();
         });
     }
 
@@ -51,7 +51,7 @@ class CaptureWebhookRequest extends FormRequest
             endpoint: $this->endpoint(),
             rawRequestBody: $this->getContent(),
             capturedHeaders: $this->capturedHeaders(),
-            hooklineEventId: $this->hooklineEventId(),
+            webhookId: $this->header('webhook-id', ''),
         );
     }
 
@@ -62,17 +62,6 @@ class CaptureWebhookRequest extends FormRequest
         }
 
         return $this->endpoint;
-    }
-
-    private function hooklineEventId(): ?string
-    {
-        $hooklineEventId = $this->header('X-Hookline-Event-Id');
-
-        if (! is_string($hooklineEventId) || $hooklineEventId === '') {
-            return null;
-        }
-
-        return $hooklineEventId;
     }
 
     /**
@@ -112,13 +101,14 @@ class CaptureWebhookRequest extends FormRequest
 
     private function ensureSignatureIsValid(): void
     {
-        $hmacTimestampVerifier = new HmacTimestampVerifier();
+        $webhookSignatureVerifier = new WebhookSignatureVerifier();
 
-        $isValid = $hmacTimestampVerifier->verify(
+        $isValid = $webhookSignatureVerifier->verify(
             $this->endpoint()->signing_secret,
-            (string) $this->header('X-Hookline-Timestamp', ''),
+            $this->header('webhook-id', ''),
+            $this->header('webhook-timestamp', ''),
             $this->getContent(),
-            (string) $this->header('X-Hookline-Signature', ''),
+            $this->header('webhook-signature', ''),
             (int) config('hookline.capture.timestamp_tolerance_seconds'),
         );
 
@@ -127,17 +117,11 @@ class CaptureWebhookRequest extends FormRequest
         }
     }
 
-    private function ensureHooklineEventIdIsWithinLengthLimit(): void
+    private function ensureWebhookIdIsWithinLengthLimit(): void
     {
-        $hooklineEventId = $this->hooklineEventId();
-
-        if ($hooklineEventId === null) {
-            return;
-        }
-
         $maximumLength = (int) config('hookline.capture.max_deduplication_key_length');
 
-        if (strlen($hooklineEventId) > $maximumLength) {
+        if (strlen($this->header('webhook-id', '')) > $maximumLength) {
             abort(response()->json(['message' => 'Event id too long.'], 400));
         }
     }

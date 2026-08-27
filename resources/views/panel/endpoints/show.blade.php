@@ -54,11 +54,11 @@
     <h2 class="mt-10 text-zinc-50">Send a test</h2>
     <pre class="mt-2 overflow-x-auto whitespace-pre-wrap border border-zinc-800 p-3 text-zinc-50">curl -X POST {{ $captureUrl }} \
   -H 'Content-Type: application/json' \
-  -H 'X-Hookline-Timestamp: &lt;unix seconds&gt;' \
-  -H 'X-Hookline-Signature: HMAC-SHA256(timestamp + "." + raw body, signing_secret)' \
-  -H 'X-Hookline-Event-Id: evt_demo' \
+  -H 'webhook-id: msg_demo' \
+  -H 'webhook-timestamp: &lt;unix seconds&gt;' \
+  -H 'webhook-signature: v1,&lt;base64 HMAC-SHA256 of id.timestamp.body&gt;' \
   -d '{"ok":true}'</pre>
-    <p class="mt-3 text-zinc-400">Compute the signature as in README.md: HMAC-SHA256 of timestamp + "." + raw body, keyed with this signing secret.</p>
+    <p class="mt-3 text-zinc-400">Compute the signature as in README.md: HMAC-SHA256 of webhook-id + "." + webhook-timestamp + "." + raw body, keyed with the decoded signing secret.</p>
 
     <h2 class="mt-10 text-zinc-50">Events</h2>
     @if ($endpointEvents->isEmpty())

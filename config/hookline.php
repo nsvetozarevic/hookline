@@ -13,8 +13,8 @@ return [
         'captured_header_names' => [
             'content-type',
             'user-agent',
-            'x-hookline-timestamp',
-            'x-hookline-event-id',
+            'webhook-id',
+            'webhook-timestamp',
         ],
     ],
 ];

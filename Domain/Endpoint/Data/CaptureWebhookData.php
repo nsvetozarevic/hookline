@@ -15,7 +15,7 @@ final readonly class CaptureWebhookData
         public Endpoint $endpoint,
         public string $rawRequestBody,
         public array $capturedHeaders,
-        public ?string $hooklineEventId,
+        public string $webhookId,
     ) {
     }
 }

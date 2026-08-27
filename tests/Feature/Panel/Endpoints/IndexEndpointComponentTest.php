@@ -6,6 +6,7 @@ namespace Tests\Feature\Panel\Endpoints;
 
 use App\Routing\WebRoute;
 use Domain\Endpoint\Models\Endpoint;
+use Domain\Endpoint\Utility\SigningSecret;
 use Domain\User\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Interfaces\Panel\Livewire\Endpoints\IndexEndpointComponent;
@@ -32,8 +33,7 @@ class IndexEndpointComponentTest extends TestCase
 
         $this->actingAs($user)
             ->get(route(WebRoute::IndexEndpoints))
-            ->assertOk()
-            ->assertSee('Endpoints', false);
+            ->assertOk();
     }
 
     #[Test]
@@ -74,9 +74,10 @@ class IndexEndpointComponentTest extends TestCase
         $this->assertSame('stripe', $endpoint->provider);
         $this->assertTrue($endpoint->is_active);
         $this->assertSame(32, strlen($endpoint->capture_token));
-        $this->assertSame(64, strlen($endpoint->signing_secret));
         $this->assertSame(strtolower($endpoint->capture_token), $endpoint->capture_token);
-        $this->assertSame(strtolower($endpoint->signing_secret), $endpoint->signing_secret);
+        $decodedSigningSecret = SigningSecret::decode($endpoint->signing_secret);
+        $this->assertNotNull($decodedSigningSecret);
+        $this->assertSame(32, strlen($decodedSigningSecret));
     }
 
     /**

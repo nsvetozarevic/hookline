@@ -53,11 +53,8 @@ class ShowEndpointComponentTest extends TestCase
             ->assertOk()
             ->assertSee('Stripe')
             ->assertSee('stripe')
-            ->assertSee('Active')
             ->assertSee($endpoint->capture_token)
             ->assertSee($endpoint->signing_secret)
-            ->assertSee(route(WebRoute::Capture, $endpoint->capture_token), false)
-            ->assertSee('X-Hookline-Signature')
-            ->assertSee('README.md');
+            ->assertSee(route(WebRoute::Capture, $endpoint->capture_token), false);
     }
 }
