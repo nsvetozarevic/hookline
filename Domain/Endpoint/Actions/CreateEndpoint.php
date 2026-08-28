@@ -7,7 +7,7 @@ namespace Domain\Endpoint\Actions;
 use Domain\Endpoint\Data\CreateEndpointData;
 use Domain\Endpoint\Models\Endpoint;
 use Domain\Endpoint\Models\EndpointSigningSecret;
-use Domain\Endpoint\Utility\SigningSecret;
+use Domain\Webhook\Utility\WebhookSecret;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -27,7 +27,7 @@ class CreateEndpoint
 
             $endpointSigningSecret = new EndpointSigningSecret();
             $endpointSigningSecret->endpoint()->associate($endpoint);
-            $endpointSigningSecret->secret = SigningSecret::mint();
+            $endpointSigningSecret->secret = WebhookSecret::mint();
             $endpointSigningSecret->save();
 
             return $endpoint;

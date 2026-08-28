@@ -6,7 +6,7 @@ namespace Domain\Endpoint\Actions;
 
 use Domain\Endpoint\Models\Endpoint;
 use Domain\Endpoint\Models\EndpointSigningSecret;
-use Domain\Endpoint\Utility\SigningSecret;
+use Domain\Webhook\Utility\WebhookSecret;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
@@ -28,7 +28,7 @@ class RotateEndpointSigningSecret
 
             $endpointSigningSecret = new EndpointSigningSecret();
             $endpointSigningSecret->endpoint()->associate($endpoint);
-            $endpointSigningSecret->secret = SigningSecret::mint();
+            $endpointSigningSecret->secret = WebhookSecret::mint();
             $endpointSigningSecret->save();
 
             $endpoint->refresh();

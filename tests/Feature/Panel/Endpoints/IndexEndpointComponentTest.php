@@ -6,8 +6,8 @@ namespace Tests\Feature\Panel\Endpoints;
 
 use App\Routing\WebRoute;
 use Domain\Endpoint\Models\Endpoint;
-use Domain\Endpoint\Utility\SigningSecret;
 use Domain\User\Models\User;
+use Domain\Webhook\Utility\WebhookSecret;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Interfaces\Panel\Livewire\Endpoints\IndexEndpointComponent;
 use Livewire\Livewire;
@@ -75,7 +75,7 @@ class IndexEndpointComponentTest extends TestCase
         $this->assertTrue($endpoint->is_active);
         $this->assertSame(32, strlen($endpoint->capture_token));
         $this->assertSame(strtolower($endpoint->capture_token), $endpoint->capture_token);
-        $decodedSigningSecret = SigningSecret::decode($endpoint->currentSigningSecret->secret);
+        $decodedSigningSecret = WebhookSecret::decode($endpoint->currentSigningSecret->secret);
         $this->assertNotNull($decodedSigningSecret);
         $this->assertSame(32, strlen($decodedSigningSecret));
         $this->assertDatabaseCount('endpoint_signing_secrets', 1);

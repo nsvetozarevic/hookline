@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Domain\Endpoint\Utility;
+namespace Domain\Webhook\Utility;
 
-class SigningSecret
+class WebhookSecret
 {
     private const string PREFIX = 'whsec_';
 
@@ -15,13 +15,13 @@ class SigningSecret
         return sprintf('%s%s', self::PREFIX, base64_encode(random_bytes(self::BYTE_LENGTH)));
     }
 
-    public static function decode(string $signingSecret): ?string
+    public static function decode(string $webhookSecret): ?string
     {
-        if (! str_starts_with($signingSecret, self::PREFIX)) {
+        if (! str_starts_with($webhookSecret, self::PREFIX)) {
             return null;
         }
 
-        $encoded = substr($signingSecret, strlen(self::PREFIX));
+        $encoded = substr($webhookSecret, strlen(self::PREFIX));
         if ($encoded === '') {
             return null;
         }

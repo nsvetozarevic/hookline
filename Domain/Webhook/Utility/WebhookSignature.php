@@ -2,16 +2,30 @@
 
 declare(strict_types=1);
 
-namespace Domain\Endpoint\Utility;
+namespace Domain\Webhook\Utility;
 
 use Illuminate\Support\Facades\Log;
 
-class WebhookSignatureVerifier
+class WebhookSignature
 {
-    private const string SIGNATURE_VERSION_PREFIX = 'v1,';
+    public static function signV1(
+        string $decodedSecret,
+        string $webhookId,
+        string $webhookTimestamp,
+        string $rawRequestBody,
+    ): string {
+        $hash = hash_hmac(
+            'sha256',
+            sprintf('%s.%s.%s', $webhookId, $webhookTimestamp, $rawRequestBody),
+            $decodedSecret,
+            true,
+        );
 
-    public function verify(
-        string $signingSecret,
+        return sprintf('v1,%s', base64_encode($hash));
+    }
+
+    public static function verify(
+        string $webhookSecret,
         string $webhookId,
         string $webhookTimestamp,
         string $webhookRawRequestBody,
@@ -26,50 +40,50 @@ class WebhookSignatureVerifier
 
         Log::info('Webhook signature verification started.', $context);
 
-        if ($signingSecret === '') {
-            return $this->reject('empty_signing_secret', $context);
+        if ($webhookSecret === '') {
+            return self::reject('empty_signing_secret', $context);
         }
 
         if ($webhookSignatureHeader === '') {
-            return $this->reject('empty_signature_header', $context);
+            return self::reject('empty_signature_header', $context);
         }
 
         if ($webhookId === '') {
-            return $this->reject('empty_webhook_id', $context);
+            return self::reject('empty_webhook_id', $context);
         }
 
         if (str_contains($webhookId, '.')) {
-            return $this->reject('webhook_id_contains_dot', $context);
+            return self::reject('webhook_id_contains_dot', $context);
         }
 
         if (! ctype_digit($webhookTimestamp)) {
-            return $this->reject('timestamp_not_unix_seconds', $context);
+            return self::reject('timestamp_not_unix_seconds', $context);
         }
 
-        $secret = SigningSecret::decode($signingSecret);
+        $secret = WebhookSecret::decode($webhookSecret);
         if ($secret === null) {
-            return $this->reject('signing_secret_not_whsec_base64', $context);
+            return self::reject('signing_secret_not_whsec_base64', $context);
         }
 
         $currentUnixTimestamp ??= time();
         $timestampAgeSeconds = abs($currentUnixTimestamp - (int) $webhookTimestamp);
 
         if ($timestampAgeSeconds > $toleranceSeconds) {
-            return $this->reject('timestamp_outside_tolerance', [
+            return self::reject('timestamp_outside_tolerance', [
                 ...$context,
                 'age_seconds' => $timestampAgeSeconds,
                 'tolerance_seconds' => $toleranceSeconds,
             ]);
         }
 
-        $expectedSignature = $this->expectedSignature(
+        $expectedSignature = self::signV1(
             $secret,
             $webhookId,
             $webhookTimestamp,
             $webhookRawRequestBody,
         );
 
-        $signatureEntries = $this->signatureEntries($webhookSignatureHeader);
+        $signatureEntries = self::signatureEntries($webhookSignatureHeader);
 
         foreach ($signatureEntries as $signatureEntry) {
             if (hash_equals($expectedSignature, $signatureEntry)) {
@@ -77,7 +91,7 @@ class WebhookSignatureVerifier
             }
         }
 
-        return $this->reject('signature_mismatch', [
+        return self::reject('signature_mismatch', [
             ...$context,
             'signature_entry_count' => count($signatureEntries),
         ]);
@@ -86,7 +100,7 @@ class WebhookSignatureVerifier
     /**
      * @param  array<string, mixed>  $context
      */
-    private function reject(string $reason, array $context): false
+    private static function reject(string $reason, array $context): false
     {
         Log::info('Webhook signature verification failed.', [
             'reason' => $reason,
@@ -96,26 +110,10 @@ class WebhookSignatureVerifier
         return false;
     }
 
-    private function expectedSignature(
-        string $secret,
-        string $webhookId,
-        string $webhookTimestamp,
-        string $webhookRawRequestBody,
-    ): string {
-        $hash = hash_hmac(
-            'sha256',
-            sprintf('%s.%s.%s', $webhookId, $webhookTimestamp, $webhookRawRequestBody),
-            $secret,
-            true,
-        );
-
-        return sprintf('%s%s', self::SIGNATURE_VERSION_PREFIX, base64_encode($hash));
-    }
-
     /**
      * @return list<string>
      */
-    private function signatureEntries(string $webhookSignatureHeader): array
+    private static function signatureEntries(string $webhookSignatureHeader): array
     {
         $trimmedHeader = trim($webhookSignatureHeader);
         $splitEntries = preg_split('/\s+/', $trimmedHeader);

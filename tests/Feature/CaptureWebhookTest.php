@@ -8,7 +8,7 @@ use App\Routing\WebRoute;
 use Domain\Endpoint\Models\Endpoint;
 use Domain\Endpoint\Models\EndpointEvent;
 use Domain\Endpoint\Models\EndpointSigningSecret;
-use Domain\Endpoint\Utility\SigningSecret;
+use Domain\Webhook\Utility\WebhookSecret;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
 use PHPUnit\Framework\Attributes\Test;
@@ -441,7 +441,7 @@ class CaptureWebhookTest extends TestCase
         string $webhookId = 'msg_test001',
     ): array {
         $timestamp ??= time();
-        $secret = SigningSecret::decode($signingSecret);
+        $secret = WebhookSecret::decode($signingSecret);
         $this->assertNotNull($secret);
 
         $digest = hash_hmac(

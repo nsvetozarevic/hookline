@@ -6,7 +6,7 @@ namespace Interfaces\Inbound\Requests;
 
 use Domain\Endpoint\Data\CaptureWebhookData;
 use Domain\Endpoint\Models\Endpoint;
-use Domain\Endpoint\Utility\WebhookSignatureVerifier;
+use Domain\Webhook\Utility\WebhookSignature;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use LogicException;
@@ -102,20 +102,19 @@ class CaptureWebhookRequest extends FormRequest
 
     private function ensureSignatureIsValid(): void
     {
-        $webhookSignatureVerifier = new WebhookSignatureVerifier();
         $webhookId = $this->header('webhook-id', '');
         $webhookTimestamp = $this->header('webhook-timestamp', '');
         $rawRequestBody = $this->getContent();
-        $webhookSignature = $this->header('webhook-signature', '');
+        $webhookSignatureHeader = $this->header('webhook-signature', '');
         $toleranceSeconds = (int) config('hookline.capture.timestamp_tolerance_seconds');
 
         foreach ($this->endpoint()->unexpiredSigningSecrets as $signingSecret) {
-            $isValid = $webhookSignatureVerifier->verify(
+            $isValid = WebhookSignature::verify(
                 $signingSecret->secret,
                 $webhookId,
                 $webhookTimestamp,
                 $rawRequestBody,
-                $webhookSignature,
+                $webhookSignatureHeader,
                 $toleranceSeconds,
             );
 

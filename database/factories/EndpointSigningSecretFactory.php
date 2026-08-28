@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use Domain\Endpoint\Models\EndpointSigningSecret;
-use Domain\Endpoint\Utility\SigningSecret;
+use Domain\Webhook\Utility\WebhookSecret;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -21,7 +21,7 @@ class EndpointSigningSecretFactory extends Factory
     public function definition(): array
     {
         return [
-            'secret' => SigningSecret::mint(),
+            'secret' => WebhookSecret::mint(),
             'expires_at' => null,
         ];
     }

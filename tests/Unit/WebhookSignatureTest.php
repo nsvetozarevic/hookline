@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use Domain\Endpoint\Utility\SigningSecret;
-use Domain\Endpoint\Utility\WebhookSignatureVerifier;
+use Domain\Webhook\Utility\WebhookSecret;
+use Domain\Webhook\Utility\WebhookSignature;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
-class WebhookSignatureVerifierTest extends TestCase
+class WebhookSignatureTest extends TestCase
 {
     #[Test]
     public function valid_payload_passes(): void
     {
-        $this->assertTrue((new WebhookSignatureVerifier())->verify(...$this->validPayload()));
+        $this->assertTrue(WebhookSignature::verify(...$this->validPayload()));
     }
 
     #[Test]
@@ -28,7 +28,7 @@ class WebhookSignatureVerifierTest extends TestCase
             $payload['webhookSignatureHeader'],
         );
 
-        $this->assertTrue((new WebhookSignatureVerifier())->verify(...$payload));
+        $this->assertTrue(WebhookSignature::verify(...$payload));
     }
 
     /**
@@ -40,7 +40,7 @@ class WebhookSignatureVerifierTest extends TestCase
     {
         $payload = [...$this->validPayload(), ...$overrides];
 
-        $this->assertFalse((new WebhookSignatureVerifier())->verify(...$payload));
+        $this->assertFalse(WebhookSignature::verify(...$payload));
     }
 
     #[Test]
@@ -48,13 +48,13 @@ class WebhookSignatureVerifierTest extends TestCase
     {
         $payload = [...$this->validPayload(), 'webhookId' => 'msg.evil'];
         $payload['webhookSignatureHeader'] = $this->sign(
-            signingSecret: $payload['signingSecret'],
+            webhookSecret: $payload['webhookSecret'],
             webhookId: $payload['webhookId'],
             webhookTimestamp: $payload['webhookTimestamp'],
             webhookRawRequestBody: $payload['webhookRawRequestBody'],
         );
 
-        $this->assertFalse((new WebhookSignatureVerifier())->verify(...$payload));
+        $this->assertFalse(WebhookSignature::verify(...$payload));
     }
 
     /**
@@ -63,12 +63,12 @@ class WebhookSignatureVerifierTest extends TestCase
     public static function invalidPayloads(): array
     {
         return [
-            'empty signing secret' => [['signingSecret' => '']],
+            'empty signing secret' => [['webhookSecret' => '']],
             'empty signature header' => [['webhookSignatureHeader' => '']],
             'empty webhook id' => [['webhookId' => '']],
             'webhook id containing a dot' => [['webhookId' => 'msg.evil']],
             'non-digit timestamp' => [['webhookTimestamp' => 'not-a-time']],
-            'signing secret that is not whsec base64' => [['signingSecret' => 'not-whsec']],
+            'signing secret that is not whsec base64' => [['webhookSecret' => 'not-whsec']],
             'stale timestamp' => [['currentUnixTimestamp' => 1700000000 + 301]],
             'future timestamp' => [['currentUnixTimestamp' => 1700000000 - 301]],
             'id swap' => [['webhookId' => 'msg_other']],
@@ -78,7 +78,7 @@ class WebhookSignatureVerifierTest extends TestCase
 
     /**
      * @return array{
-     *     signingSecret: string,
+     *     webhookSecret: string,
      *     webhookId: string,
      *     webhookTimestamp: string,
      *     webhookRawRequestBody: string,
@@ -90,7 +90,7 @@ class WebhookSignatureVerifierTest extends TestCase
     private function validPayload(): array
     {
         return [
-            'signingSecret' => 'whsec_YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=',
+            'webhookSecret' => 'whsec_YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=',
             'webhookId' => 'msg_test001',
             'webhookTimestamp' => '1700000000',
             'webhookRawRequestBody' => '{"ok":true}',
@@ -101,12 +101,12 @@ class WebhookSignatureVerifierTest extends TestCase
     }
 
     private function sign(
-        string $signingSecret,
+        string $webhookSecret,
         string $webhookId,
         string $webhookTimestamp,
         string $webhookRawRequestBody,
     ): string {
-        $secret = SigningSecret::decode($signingSecret);
+        $secret = WebhookSecret::decode($webhookSecret);
         $this->assertNotNull($secret);
 
         $hash = hash_hmac(
