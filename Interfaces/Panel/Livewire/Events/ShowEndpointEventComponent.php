@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Interfaces\Panel\Livewire\Events;
 
+use Domain\Delivery\Actions\ReplayDelivery;
+use Domain\Delivery\Enums\DeliveryStatus;
+use Domain\Delivery\Models\Delivery;
 use Domain\Endpoint\Models\EndpointEvent;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
@@ -29,11 +32,33 @@ class ShowEndpointEventComponent extends Component
         $payloadIsTruncated = strlen($formattedPayload) > self::DISPLAY_PAYLOAD_BYTES;
 
         return view('panel.events.show', [
+            'deliveries' => $this->endpointEvent
+                ->deliveries()
+                ->with([
+                    'destination',
+                    'latestDeliveryAttempt',
+                    'deliveryAttempts' => fn ($query) => $query->orderBy('attempt_number'),
+                ])
+                ->orderBy('id')
+                ->get(),
             'payloadForDisplay' => $payloadIsTruncated
                 ? substr($formattedPayload, 0, self::DISPLAY_PAYLOAD_BYTES)
                 : $formattedPayload,
             'payloadIsTruncated' => $payloadIsTruncated,
         ]);
+    }
+
+    public function replayDelivery(int $deliveryId, ReplayDelivery $replayDelivery): void
+    {
+        $this->authorize('view', $this->endpointEvent->endpoint);
+
+        $delivery = Delivery::query()
+            ->whereKey($deliveryId)
+            ->where('endpoint_event_id', $this->endpointEvent->id)
+            ->whereIn('status', DeliveryStatus::replayableValues())
+            ->firstOrFail();
+
+        $replayDelivery->handle($delivery);
     }
 
     private function formattedPayload(): string

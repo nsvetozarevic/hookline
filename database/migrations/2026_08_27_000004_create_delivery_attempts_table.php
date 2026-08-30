@@ -13,6 +13,7 @@ return new class () extends Migration {
             $table->id();
             $table->foreignId('delivery_id')->constrained('deliveries')->cascadeOnDelete();
             $table->unsignedSmallInteger('attempt_number');
+            $table->string('result');
             $table->jsonb('request_headers');
             $table->unsignedSmallInteger('response_status')->nullable();
             $table->text('response_body_snippet')->nullable();

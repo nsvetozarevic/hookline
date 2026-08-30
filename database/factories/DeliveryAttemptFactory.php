@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use Domain\Delivery\Enums\DeliveryAttemptResult;
 use Domain\Delivery\Models\Delivery;
 use Domain\Delivery\Models\DeliveryAttempt;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -23,6 +24,7 @@ class DeliveryAttemptFactory extends Factory
         return [
             'delivery_id' => Delivery::factory(),
             'attempt_number' => 1,
+            'result' => DeliveryAttemptResult::Succeeded,
             'request_headers' => [],
             'response_status' => null,
             'response_body_snippet' => null,

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Domain\Endpoint\Data;
 
-final readonly class CreateEndpointData
+final readonly class StoreEndpointData
 {
     public function __construct(
         public int $userId,

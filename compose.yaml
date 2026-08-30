@@ -35,6 +35,25 @@ services:
       - hookline
     restart: unless-stopped
 
+  scheduler:
+    image: hookline-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: php artisan schedule:work
+    volumes:
+      - .:/var/www/html
+    env_file:
+      - .env.docker.local
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - hookline
+    restart: unless-stopped
+
   nginx:
     image: nginx:1.27-alpine
     ports:

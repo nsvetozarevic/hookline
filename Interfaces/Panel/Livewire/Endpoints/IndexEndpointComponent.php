@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Interfaces\Panel\Livewire\Endpoints;
 
 use App\Routing\WebRoute;
-use Domain\Endpoint\Actions\CreateEndpoint;
-use Domain\Endpoint\Data\CreateEndpointData;
+use Domain\Endpoint\Actions\StoreEndpoint;
+use Domain\Endpoint\Data\StoreEndpointData;
 use Illuminate\View\View;
 use Interfaces\Panel\Livewire\Forms\CreateEndpointForm;
 use Livewire\Attributes\Layout;
@@ -27,11 +27,11 @@ class IndexEndpointComponent extends Component
         ]);
     }
 
-    public function createEndpoint(CreateEndpoint $createEndpoint): void
+    public function storeEndpoint(StoreEndpoint $storeEndpoint): void
     {
         $this->form->validate();
 
-        $endpoint = $createEndpoint->handle(new CreateEndpointData(
+        $endpoint = $storeEndpoint->handle(new StoreEndpointData(
             userId: user()->id,
             name: $this->form->name,
             provider: $this->form->provider !== '' ? $this->form->provider : null,

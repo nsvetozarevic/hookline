@@ -72,6 +72,56 @@
   -d '{"ok":true}'</pre>
     <p class="mt-3 text-zinc-400">Compute the signature as in README.md: HMAC-SHA256 of webhook-id + "." + webhook-timestamp + "." + raw body, keyed with the decoded signing secret.</p>
 
+    <h2 class="mt-10 text-zinc-50">Destinations</h2>
+    <form wire:submit="storeDestination" class="mt-4 space-y-4">
+        <div>
+            <label for="destination-url" class="block text-zinc-400">URL</label>
+            <input
+                id="destination-url"
+                type="url"
+                wire:model="form.url"
+                required
+                placeholder="https://example.com/webhooks"
+                class="mt-1 w-full border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-50"
+            >
+            @error('form.url')
+                <p class="mt-1 text-red-400">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <button type="submit" class="border border-zinc-500 px-4 py-2 text-zinc-50 hover:bg-zinc-800">
+            Add destination
+        </button>
+    </form>
+
+    @if ($destinations->isEmpty())
+        <p class="mt-4 text-zinc-400">No destinations yet — add one to fan out captured events.</p>
+    @else
+        <ul class="mt-4 space-y-2">
+            @foreach ($destinations as $destination)
+                <li wire:key="destination-{{ $destination->id }}" class="border border-zinc-800 px-3 py-2 text-zinc-400">
+                    <span class="break-all text-zinc-50">{{ $destination->url }}</span>
+                    <span> · {{ $destination->is_active ? 'Active' : 'Inactive' }}</span>
+                    <button
+                        type="button"
+                        wire:click="updateDestination({{ $destination->id }})"
+                        class="ml-2 text-zinc-50 underline"
+                    >
+                        {{ $destination->is_active ? 'Deactivate' : 'Activate' }}
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="deleteDestination({{ $destination->id }})"
+                        wire:confirm="Delete this destination?"
+                        class="ml-2 text-red-400 underline"
+                    >
+                        Delete
+                    </button>
+                </li>
+            @endforeach
+        </ul>
+    @endif
+
     <h2 class="mt-10 text-zinc-50">Events</h2>
     @if ($endpointEvents->isEmpty())
         <p class="mt-4 text-zinc-400">No events yet — try the curl above.</p>

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'endpoint_event_id',
@@ -49,6 +50,14 @@ class Delivery extends Model
     public function deliveryAttempts(): HasMany
     {
         return $this->hasMany(DeliveryAttempt::class);
+    }
+
+    /**
+     * @return HasOne<DeliveryAttempt, $this>
+     */
+    public function latestDeliveryAttempt(): HasOne
+    {
+        return $this->hasOne(DeliveryAttempt::class)->latestOfMany('attempt_number');
     }
 
     /**

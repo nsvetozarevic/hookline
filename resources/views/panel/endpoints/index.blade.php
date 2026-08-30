@@ -3,7 +3,7 @@
 <div>
     <h1 class="text-xl text-zinc-50">Endpoints</h1>
 
-    <form wire:submit="createEndpoint" class="mt-8 space-y-4">
+    <form wire:submit="storeEndpoint" class="mt-8 space-y-4">
         <div>
             <label for="name" class="block text-zinc-400">Name</label>
             <input

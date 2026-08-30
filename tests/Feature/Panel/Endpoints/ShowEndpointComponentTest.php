@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature\Panel\Endpoints;
 
 use App\Routing\WebRoute;
+use Domain\Delivery\Models\Destination;
 use Domain\Endpoint\Models\Endpoint;
 use Domain\User\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Interfaces\Panel\Livewire\Endpoints\ShowEndpointComponent;
 use Livewire\Livewire;
@@ -117,5 +119,112 @@ class ShowEndpointComponentTest extends TestCase
 
         Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
             ->assertForbidden();
+    }
+
+    #[Test]
+    public function store_destination_adds_a_row_and_shows_it_on_the_page(): void
+    {
+        $user = User::factory()->create();
+        $endpoint = Endpoint::factory()->for($user)->create();
+
+        $this->actingAs($user);
+
+        Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
+            ->set('form.url', 'https://example.com/webhooks')
+            ->call('storeDestination')
+            ->assertHasNoErrors()
+            ->assertSee('https://example.com/webhooks');
+
+        $destination = Destination::query()->where('endpoint_id', $endpoint->id)->sole();
+        $this->assertSame('https://example.com/webhooks', $destination->url);
+        $this->assertTrue($destination->is_active);
+        $this->assertSame(1, $destination->signingSecrets()->count());
+    }
+
+    #[Test]
+    public function store_destination_rejects_a_non_public_url(): void
+    {
+        $user = User::factory()->create();
+        $endpoint = Endpoint::factory()->for($user)->create();
+
+        $this->actingAs($user);
+
+        Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
+            ->set('form.url', 'https://169.254.169.254/latest/meta-data')
+            ->call('storeDestination')
+            ->assertHasErrors(['form.url']);
+
+        $this->assertDatabaseCount('destinations', 0);
+    }
+
+    #[Test]
+    public function update_destination_toggles_active_state(): void
+    {
+        $user = User::factory()->create();
+        $endpoint = Endpoint::factory()->for($user)->create();
+        $destination = Destination::factory()->for($endpoint)->create([
+            'url' => 'https://example.com/webhooks',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
+            ->call('updateDestination', $destination->id)
+            ->assertSee('Inactive')
+            ->assertSee('Activate')
+            ->call('updateDestination', $destination->id)
+            ->assertSee('Active')
+            ->assertSee('Deactivate');
+
+        $this->assertTrue($destination->fresh()->is_active);
+    }
+
+    #[Test]
+    public function update_destination_rejects_a_destination_on_another_endpoint(): void
+    {
+        $user = User::factory()->create();
+        $endpoint = Endpoint::factory()->for($user)->create();
+        $otherEndpoint = Endpoint::factory()->for($user)->create();
+        $destination = Destination::factory()->for($otherEndpoint)->create();
+
+        $this->actingAs($user);
+        $this->expectException(ModelNotFoundException::class);
+
+        Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
+            ->call('updateDestination', $destination->id);
+    }
+
+    #[Test]
+    public function delete_destination_removes_the_row(): void
+    {
+        $user = User::factory()->create();
+        $endpoint = Endpoint::factory()->for($user)->create();
+        $destination = Destination::factory()->for($endpoint)->create([
+            'url' => 'https://example.com/webhooks',
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
+            ->call('deleteDestination', $destination->id)
+            ->assertSee('No destinations yet');
+
+        $this->assertDatabaseMissing('destinations', ['id' => $destination->id]);
+    }
+
+    #[Test]
+    public function delete_destination_rejects_a_destination_on_another_endpoint(): void
+    {
+        $user = User::factory()->create();
+        $endpoint = Endpoint::factory()->for($user)->create();
+        $otherEndpoint = Endpoint::factory()->for($user)->create();
+        $destination = Destination::factory()->for($otherEndpoint)->create();
+
+        $this->actingAs($user);
+        $this->expectException(ModelNotFoundException::class);
+
+        Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
+            ->call('deleteDestination', $destination->id);
     }
 }

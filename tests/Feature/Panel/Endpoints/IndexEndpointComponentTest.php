@@ -62,7 +62,7 @@ class IndexEndpointComponentTest extends TestCase
         $component = Livewire::test(IndexEndpointComponent::class)
             ->set('form.name', 'Stripe')
             ->set('form.provider', 'stripe')
-            ->call('createEndpoint')
+            ->call('storeEndpoint')
             ->assertHasNoErrors();
 
         $endpoint = Endpoint::query()->sole();
@@ -99,7 +99,7 @@ class IndexEndpointComponentTest extends TestCase
         Livewire::test(IndexEndpointComponent::class)
             ->set('form.name', $invalidData['name'])
             ->set('form.provider', $invalidData['provider'])
-            ->call('createEndpoint')
+            ->call('storeEndpoint')
             ->assertHasErrors([$fieldKey]);
 
         $this->assertDatabaseCount('endpoints', 0);

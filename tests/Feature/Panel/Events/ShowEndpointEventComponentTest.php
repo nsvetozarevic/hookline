@@ -5,10 +5,18 @@ declare(strict_types=1);
 namespace Tests\Feature\Panel\Events;
 
 use App\Routing\WebRoute;
+use Domain\Delivery\Enums\DeliveryAttemptResult;
+use Domain\Delivery\Enums\DeliveryStatus;
+use Domain\Delivery\Jobs\DeliverDelivery;
+use Domain\Delivery\Models\Delivery;
+use Domain\Delivery\Models\DeliveryAttempt;
+use Domain\Delivery\Models\Destination;
 use Domain\Endpoint\Models\Endpoint;
 use Domain\Endpoint\Models\EndpointEvent;
 use Domain\User\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Interfaces\Panel\Livewire\Events\ShowEndpointEventComponent;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
@@ -104,5 +112,140 @@ class ShowEndpointEventComponentTest extends TestCase
             ->assertOk()
             ->assertDontSee('TAIL')
             ->assertSee('Truncated, 65 KB total.');
+    }
+
+    #[Test]
+    public function it_shows_delivery_attempt_details(): void
+    {
+        $user = User::factory()->create();
+        $endpoint = Endpoint::factory()->for($user)->create();
+        $endpointEvent = EndpointEvent::factory()->for($endpoint)->create();
+        $destination = Destination::factory()->for($endpoint)->create([
+            'url' => 'https://example.com/webhook',
+        ]);
+        $delivery = Delivery::factory()->create([
+            'endpoint_event_id' => $endpointEvent->id,
+            'destination_id' => $destination->id,
+            'status' => DeliveryStatus::Dead,
+            'attempts' => 3,
+            'last_status_code' => 502,
+            'last_error' => 'HTTP 502',
+        ]);
+        DeliveryAttempt::factory()->create([
+            'delivery_id' => $delivery->id,
+            'attempt_number' => 3,
+            'result' => DeliveryAttemptResult::Failed,
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(ShowEndpointEventComponent::class, ['endpointEvent' => $endpointEvent])
+            ->assertOk()
+            ->assertSee('https://example.com/webhook')
+            ->assertSee('dead')
+            ->assertSee('3')
+            ->assertSee('502')
+            ->assertSee('failed')
+            ->assertSee('HTTP 502')
+            ->assertSee('Replay');
+    }
+
+    #[Test]
+    public function it_shows_delivery_attempt_history(): void
+    {
+        $user = User::factory()->create();
+        $endpoint = Endpoint::factory()->for($user)->create();
+        $endpointEvent = EndpointEvent::factory()->for($endpoint)->create();
+        $destination = Destination::factory()->for($endpoint)->create([
+            'url' => 'https://example.com/webhook',
+        ]);
+        $delivery = Delivery::factory()->create([
+            'endpoint_event_id' => $endpointEvent->id,
+            'destination_id' => $destination->id,
+            'status' => DeliveryStatus::Dead,
+            'attempts' => 2,
+        ]);
+        DeliveryAttempt::factory()->create([
+            'delivery_id' => $delivery->id,
+            'attempt_number' => 1,
+            'result' => DeliveryAttemptResult::Retryable,
+            'response_status' => 503,
+            'duration_ms' => 120,
+            'error' => 'HTTP 503',
+        ]);
+        DeliveryAttempt::factory()->create([
+            'delivery_id' => $delivery->id,
+            'attempt_number' => 2,
+            'result' => DeliveryAttemptResult::Failed,
+            'response_status' => 500,
+            'duration_ms' => 95,
+            'error' => 'HTTP 500',
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(ShowEndpointEventComponent::class, ['endpointEvent' => $endpointEvent])
+            ->assertOk()
+            ->assertSee('Attempt log')
+            ->assertSee('retryable')
+            ->assertSee('failed')
+            ->assertSee('503')
+            ->assertSee('500')
+            ->assertSee('120 ms')
+            ->assertSee('95 ms');
+    }
+
+    #[Test]
+    public function replay_delivery_resets_a_dead_delivery_and_dispatches_the_job(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+
+        $user = User::factory()->create();
+        $endpoint = Endpoint::factory()->for($user)->create();
+        $endpointEvent = EndpointEvent::factory()->for($endpoint)->create();
+        $destination = Destination::factory()->for($endpoint)->create([
+            'url' => 'https://example.com/webhook',
+        ]);
+        $delivery = Delivery::factory()->create([
+            'endpoint_event_id' => $endpointEvent->id,
+            'destination_id' => $destination->id,
+            'status' => DeliveryStatus::Dead,
+            'attempts' => 2,
+        ]);
+        Queue::fake();
+
+        $this->actingAs($user);
+
+        Livewire::test(ShowEndpointEventComponent::class, ['endpointEvent' => $endpointEvent])
+            ->call('replayDelivery', $delivery->id);
+
+        $delivery->refresh();
+        $this->assertSame(DeliveryStatus::Pending, $delivery->status);
+        $this->assertSame(0, $delivery->attempts);
+
+        Queue::assertPushed(DeliverDelivery::class, fn (DeliverDelivery $job): bool => $job->deliveryId === $delivery->id);
+    }
+
+    #[Test]
+    public function replay_delivery_rejects_a_pending_delivery(): void
+    {
+        $user = User::factory()->create();
+        $endpoint = Endpoint::factory()->for($user)->create();
+        $endpointEvent = EndpointEvent::factory()->for($endpoint)->create();
+        $destination = Destination::factory()->for($endpoint)->create();
+        $delivery = Delivery::factory()->create([
+            'endpoint_event_id' => $endpointEvent->id,
+            'destination_id' => $destination->id,
+            'status' => DeliveryStatus::Pending,
+        ]);
+        Queue::fake();
+
+        $this->actingAs($user);
+        $this->expectException(ModelNotFoundException::class);
+
+        Livewire::test(ShowEndpointEventComponent::class, ['endpointEvent' => $endpointEvent])
+            ->call('replayDelivery', $delivery->id);
+
+        Queue::assertNothingPushed();
     }
 }

@@ -23,5 +23,9 @@ return [
     'delivery' => [
         'default_timeout_seconds' => 5,
         'default_max_attempts' => 8,
+        'backoff_base_seconds' => 10,
+        'backoff_cap_seconds' => 3600,
+        'response_snippet_bytes' => 1024,
+        'in_flight_timeout_seconds' => 300,
     ],
 ];
