@@ -21,6 +21,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class DeliverDelivery implements ShouldQueue
@@ -52,6 +53,11 @@ class DeliverDelivery implements ShouldQueue
 
     public function failed(?Throwable $exception): void
     {
+        Log::channel('hookline')->error('Delivery job failed.', [
+            'delivery_id' => $this->deliveryId,
+            'error' => $exception?->getMessage() ?? 'Job failed',
+        ]);
+
         Delivery::query()
             ->whereKey($this->deliveryId)
             ->whereNotIn('status', [
@@ -169,6 +175,14 @@ class DeliverDelivery implements ShouldQueue
         $attempt->error = $result->error;
 
         $attempt->save();
+
+        Log::channel('hookline')->info('Delivery attempt recorded.', [
+            ...$this->deliveryContext($delivery),
+            'result' => $result->attemptResult->value,
+            'response_status' => $result->responseStatus,
+            'duration_ms' => $result->durationMs,
+            'error' => $result->error,
+        ]);
     }
 
     private function markSucceeded(Delivery $delivery, ?int $responseStatus): void
@@ -179,6 +193,11 @@ class DeliverDelivery implements ShouldQueue
         $delivery->last_status_code = $responseStatus;
         $delivery->last_error = null;
         $delivery->save();
+
+        Log::channel('hookline')->info('Delivery succeeded.', [
+            ...$this->deliveryContext($delivery),
+            'response_status' => $responseStatus,
+        ]);
     }
 
     private function markDead(Delivery $delivery, ?int $responseStatus, ?string $error): void
@@ -189,6 +208,12 @@ class DeliverDelivery implements ShouldQueue
         $delivery->last_status_code = $responseStatus;
         $delivery->last_error = $error;
         $delivery->save();
+
+        Log::channel('hookline')->warning('Delivery dead.', [
+            ...$this->deliveryContext($delivery),
+            'response_status' => $responseStatus,
+            'error' => $error,
+        ]);
     }
 
     private function scheduleRetry(Delivery $delivery, DeliverySendResult $result): void
@@ -210,6 +235,25 @@ class DeliverDelivery implements ShouldQueue
         $delivery->save();
 
         self::dispatch($this->deliveryId)->delay($nextAttemptAt);
+
+        Log::channel('hookline')->info('Delivery retry scheduled.', [
+            ...$this->deliveryContext($delivery),
+            'next_attempt_at' => $nextAttemptAt->toDateTimeString(),
+            'delay_seconds' => $delaySeconds,
+        ]);
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function deliveryContext(Delivery $delivery): array
+    {
+        return [
+            'delivery_id' => $delivery->id,
+            'destination_id' => $delivery->destination_id,
+            'event_id' => $delivery->endpoint_event_id,
+            'attempt_number' => $delivery->attempts,
+        ];
     }
 
     private function failureMessage(DeliverySendResult $result): ?string

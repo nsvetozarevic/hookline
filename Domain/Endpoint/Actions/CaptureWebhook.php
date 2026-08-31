@@ -11,6 +11,7 @@ use Domain\Endpoint\Data\CaptureWebhookResult;
 use Domain\Endpoint\Models\EndpointEvent;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CaptureWebhook
 {
@@ -28,7 +29,17 @@ class CaptureWebhook
                 $endpointEvent->payload = $captureWebhookData->rawRequestBody;
                 $endpointEvent->save();
 
-                return (new FanOutDeliveries())->handle($endpointEvent);
+                $deliveryIds = (new FanOutDeliveries())->handle($endpointEvent);
+
+                Log::channel('hookline')->info('Capture accepted.', [
+                    'endpoint_id' => $endpoint->id,
+                    'event_id' => $endpointEvent->id,
+                    'deduplication_key' => $deduplicationKey,
+                    'delivery_count' => count($deliveryIds),
+                    'payload_bytes' => strlen($captureWebhookData->rawRequestBody),
+                ]);
+
+                return $deliveryIds;
             });
 
             foreach ($deliveryIds as $deliveryId) {
@@ -37,6 +48,11 @@ class CaptureWebhook
 
             return CaptureWebhookResult::accepted($deduplicationKey);
         } catch (UniqueConstraintViolationException) {
+            Log::channel('hookline')->info('Capture duplicate.', [
+                'endpoint_id' => $endpoint->id,
+                'deduplication_key' => $deduplicationKey,
+            ]);
+
             return CaptureWebhookResult::duplicate($deduplicationKey);
         }
     }

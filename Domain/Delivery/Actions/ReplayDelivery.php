@@ -7,6 +7,7 @@ namespace Domain\Delivery\Actions;
 use Domain\Delivery\Enums\DeliveryStatus;
 use Domain\Delivery\Jobs\DeliverDelivery;
 use Domain\Delivery\Models\Delivery;
+use Illuminate\Support\Facades\Log;
 
 class ReplayDelivery
 {
@@ -21,5 +22,11 @@ class ReplayDelivery
         $delivery->save();
 
         DeliverDelivery::dispatch($delivery->id);
+
+        Log::channel('hookline')->info('Delivery replayed.', [
+            'delivery_id' => $delivery->id,
+            'event_id' => $delivery->endpoint_event_id,
+            'destination_id' => $delivery->destination_id,
+        ]);
     }
 }

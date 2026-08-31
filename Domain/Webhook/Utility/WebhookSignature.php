@@ -38,7 +38,7 @@ class WebhookSignature
             'timestamp' => $webhookTimestamp,
         ];
 
-        Log::info('Webhook signature verification started.', $context);
+        Log::channel('hookline')->info('Webhook signature verification started.', $context);
 
         if ($webhookSecret === '') {
             return self::reject('empty_signing_secret', $context);
@@ -102,7 +102,7 @@ class WebhookSignature
      */
     private static function reject(string $reason, array $context): false
     {
-        Log::info('Webhook signature verification failed.', [
+        Log::channel('hookline')->info('Webhook signature verification failed.', [
             'reason' => $reason,
             ...$context,
         ]);

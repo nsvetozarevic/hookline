@@ -7,6 +7,7 @@ namespace Domain\Delivery\Actions;
 use Domain\Delivery\Enums\DeliveryStatus;
 use Domain\Delivery\Jobs\DeliverDelivery;
 use Domain\Delivery\Models\Delivery;
+use Illuminate\Support\Facades\Log;
 
 class DispatchDueDeliveries
 {
@@ -24,6 +25,12 @@ class DispatchDueDeliveries
                 DeliverDelivery::dispatch($delivery->id);
                 $count++;
             });
+
+        if ($count > 0) {
+            Log::channel('hookline')->info('Due deliveries dispatched.', [
+                'dispatched_count' => $count,
+            ]);
+        }
 
         return $count;
     }

@@ -125,6 +125,14 @@ return [
             'handler' => NullHandler::class,
         ],
 
+        'hookline' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/hookline.log'),
+            'level' => env('HOOKLINE_LOG_LEVEL', 'info'),
+            'days' => env('HOOKLINE_LOG_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],

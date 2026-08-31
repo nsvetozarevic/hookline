@@ -9,6 +9,7 @@ use Domain\Endpoint\Models\Endpoint;
 use Domain\Webhook\Utility\WebhookSignature;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Log;
 use LogicException;
 
 /**
@@ -84,18 +85,37 @@ class CaptureWebhookRequest extends FormRequest
 
     private function resolveActiveEndpoint(): Endpoint
     {
-        return Endpoint::query()
+        $endpoint = Endpoint::query()
             ->with('unexpiredSigningSecrets')
             ->where('capture_token', $this->route('captureToken'))
             ->where('is_active', true)
-            ->firstOrFail();
+            ->first();
+
+        if ($endpoint === null) {
+            Log::channel('hookline')->info('Capture rejected.', [
+                'reason' => 'unknown_or_inactive_token',
+                'capture_token' => (string) $this->route('captureToken'),
+            ]);
+
+            abort(response()->json(['message' => 'Not found.'], 404));
+        }
+
+        return $endpoint;
     }
 
     private function ensurePayloadIsWithinSizeLimit(): void
     {
         $maximumBodyBytes = (int) config('hookline.capture.max_body_kilobytes') * 1024;
+        $payloadBytes = strlen($this->getContent());
 
-        if (strlen($this->getContent()) > $maximumBodyBytes) {
+        if ($payloadBytes > $maximumBodyBytes) {
+            Log::channel('hookline')->info('Capture rejected.', [
+                'reason' => 'payload_too_large',
+                'endpoint_id' => $this->endpoint()->id,
+                'payload_bytes' => $payloadBytes,
+                'limit_bytes' => $maximumBodyBytes,
+            ]);
+
             abort(response()->json(['message' => 'Payload too large.'], 413));
         }
     }
@@ -123,14 +143,28 @@ class CaptureWebhookRequest extends FormRequest
             }
         }
 
+        Log::channel('hookline')->info('Capture rejected.', [
+            'reason' => 'invalid_signature',
+            'endpoint_id' => $this->endpoint()->id,
+            'webhook_id' => $webhookId,
+        ]);
+
         abort(response()->json(['message' => 'Invalid webhook signature.'], 401));
     }
 
     private function ensureWebhookIdIsWithinLengthLimit(): void
     {
         $maximumLength = (int) config('hookline.capture.max_deduplication_key_length');
+        $webhookIdLength = strlen($this->header('webhook-id', ''));
 
-        if (strlen($this->header('webhook-id', '')) > $maximumLength) {
+        if ($webhookIdLength > $maximumLength) {
+            Log::channel('hookline')->info('Capture rejected.', [
+                'reason' => 'webhook_id_too_long',
+                'endpoint_id' => $this->endpoint()->id,
+                'webhook_id_length' => $webhookIdLength,
+                'limit' => $maximumLength,
+            ]);
+
             abort(response()->json(['message' => 'Event id too long.'], 400));
         }
     }
