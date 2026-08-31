@@ -19,6 +19,52 @@ Portfolio demo, not a hosted product. Shows how to run capture, fan-out, and del
 
 Structured ops logging goes to the `hookline` log channel (daily rotation).
 
+## Stack
+
+| Layer | Choice |
+| --- | --- |
+| Runtime | PHP 8.5, Laravel 13 |
+| UI | Livewire 4, Alpine, Tailwind v4, Fortify (register/login) |
+| Data | PostgreSQL 16 |
+| Queue / cache / sessions | Redis 7 |
+| HTTP hardening | `cboxdk/laravel-ssrf` on outbound delivery |
+| Local dev | Docker Compose (app, nginx, worker, scheduler, postgres, redis) |
+| Quality | PHPUnit, PHP CS Fixer, Larastan; CI on push/PR |
+
+Domain logic lives under `Domain/`; HTTP and panel adapters under `Interfaces/`. No Filament; the panel is a handful of Livewire screens.
+
+## Run locally
+
+**Requirements:** Docker Desktop (Compose v2).
+
+```bash
+cp -n .env.docker.example .env.docker.local   # first time only
+docker compose up --build
+```
+
+Wait until the stack is up, then from your machine (in the project directory) seed inside the **app** container:
+
+```bash
+docker compose exec app php artisan db:seed
+```
+
+On first start the `app`, `worker`, and `scheduler` containers run setup automatically: `composer install` (if `vendor/` is missing), `APP_KEY` generation (if empty), and `php artisan migrate`. The one-shot `node` service runs `npm ci && npm run build` before nginx starts, so Node on the host is optional.
+
+The seed command above runs in Docker, not on the host PHP install. It loads the demo user `user@example.com` / `password123`. After `docker compose down -v`, run `docker compose up` then seed again the same way.
+
+| Service | URL / access |
+| --- | --- |
+| App | http://localhost:8080 |
+| Health | http://localhost:8080/up |
+| Postgres | `localhost:5434` - user/pass/db: `hookline` / `secret` / `hookline` |
+| Redis | `localhost:6379` |
+| Worker | `docker compose logs -f worker` |
+| Scheduler | `docker compose logs -f scheduler` |
+
+Stop: `docker compose down`. Wipe DB volume: `docker compose down -v`.
+
+Tailwind iteration without rebuilding the stack: `npm run build` on the host.
+
 ## Flow
 
 Setup (panel): create an **endpoint** (capture token + signing secret) and one or more **destinations** per endpoint. Runtime path:
@@ -76,50 +122,9 @@ flowchart TB
 
 Capture: gates run before domain logic; idempotency is `(endpoint_id, webhook-id)` so duplicates never fan out again. Deliver: each job claims one row, records an attempt, then succeeds, dies, or schedules retry (capped by destination `max_attempts`). Scheduler: dispatches any due pending rows (backup if a delayed job was missed) and releases rows stuck in `in_flight`.
 
-## Stack
-
-| Layer | Choice |
-| --- | --- |
-| Runtime | PHP 8.5, Laravel 13 |
-| UI | Livewire 4, Alpine, Tailwind v4, Fortify (register/login) |
-| Data | PostgreSQL 16 |
-| Queue / cache / sessions | Redis 7 |
-| HTTP hardening | `cboxdk/laravel-ssrf` on outbound delivery |
-| Local dev | Docker Compose (app, nginx, worker, scheduler, postgres, redis) |
-| Quality | PHPUnit, PHP CS Fixer, Larastan; CI on push/PR |
-
-Domain logic lives under `Domain/`; HTTP and panel adapters under `Interfaces/`. No Filament; the panel is a handful of Livewire screens.
-
-## Run locally
-
-**Requirements:** Docker Desktop (Compose v2).
-
-```bash
-cp -n .env.docker.example .env.docker.local   # first time
-# Set APP_KEY in .env.docker.local (php artisan key:generate --show, or copy from .env)
-
-docker compose up --build
-docker compose exec app php artisan migrate
-```
-
-Compose loads `.env.docker.local` (Docker hostnames: `postgres`, `redis`). A one-shot `node` service runs `npm ci && npm run build` before nginx starts, so Node on the host is optional.
-
-| Service | URL / access |
-| --- | --- |
-| App | http://localhost:8080 |
-| Health | http://localhost:8080/up |
-| Postgres | `localhost:5434` - user/pass/db: `hookline` / `secret` / `hookline` |
-| Redis | `localhost:6379` |
-| Worker | `docker compose logs -f worker` |
-| Scheduler | `docker compose logs -f scheduler` |
-
-Stop: `docker compose down`. Wipe DB volume: `docker compose down -v`.
-
-Tailwind iteration without rebuilding the stack: `npm run build` on the host.
-
 ## Demo walkthrough
 
-1. Open http://localhost:8080/register and create an account.
+1. Log in at http://localhost:8080/login with `user@example.com` / `password123` (from the Docker seed step above).
 2. **Endpoints**, then **New endpoint**. Copy the capture token and signing secret from the show page.
 3. Add a **destination** URL (e.g. [webhook.site](https://webhook.site) or a local listener).
 4. Send a signed capture request. The panel show page includes a curl recipe; signing follows Standard Webhooks (`webhook-id`, `webhook-timestamp`, `webhook-signature` over `id.timestamp.body`). Official [client libraries](https://github.com/standard-webhooks/standard-webhooks) work for generating signatures.

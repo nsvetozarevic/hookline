@@ -13,14 +13,18 @@ mkdir -p \
 
 chmod -R ug+rwx storage bootstrap/cache 2>/dev/null || true
 
+if [ -f .env.docker.local ]; then
+    ln -sf .env.docker.local .env
+fi
+
 if [ ! -f vendor/autoload.php ]; then
     composer install --no-interaction --prefer-dist
 fi
 
-if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
-    if [ -f .env ] && grep -q '^APP_KEY=$' .env 2>/dev/null; then
-        php artisan key:generate --force --no-interaction || true
-    fi
+if [ -f .env ] && ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
+    php artisan key:generate --force --no-interaction
 fi
+
+php artisan migrate --force --no-interaction
 
 exec docker-php-entrypoint "$@"
