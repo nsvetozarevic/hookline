@@ -10,7 +10,7 @@ return [
     'username' => 'email',
     'email' => 'email',
     'lowercase_usernames' => true,
-    'home' => '/endpoints',
+    'home' => '/user-panel/endpoints',
     'prefix' => '',
     'domain' => null,
     'middleware' => ['web'],

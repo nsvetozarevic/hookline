@@ -13,7 +13,7 @@ Route::post('/capture/{captureToken}', CaptureWebhookController::class)
     ->middleware('throttle:capture')
     ->name(WebRoute::Capture);
 
-Route::middleware('auth')->group(function (): void {
+Route::prefix('user-panel')->middleware('auth')->group(function (): void {
     Route::get('/endpoints', IndexEndpointComponent::class)
         ->name(WebRoute::IndexEndpoints);
     Route::get('/endpoints/{endpoint}', ShowEndpointComponent::class)
