@@ -65,19 +65,28 @@ services:
       app:
         condition: service_started
       node:
-        condition: service_completed_successfully
+        condition: service_healthy
     networks:
       - hookline
 
   node:
     image: node:22-alpine
     working_dir: /var/www/html
+    ports:
+      - "5173:5173"
     volumes:
       - .:/var/www/html
       - node_modules:/var/www/html/node_modules
-    command: sh -c "rm -f public/hot && npm ci && npm run build"
+    command: sh -c "rm -f public/hot && npm ci && npm run build && exec sleep infinity"
+    healthcheck:
+      test: ["CMD", "test", "-f", "/var/www/html/public/build/manifest.json"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 180s
     networks:
       - hookline
+    restart: unless-stopped
 
   postgres:
     image: postgres:16-alpine

@@ -1,8 +1,10 @@
 # Hookline
 
+[![Tests](https://github.com/nsvetozarevic/hookline/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/nsvetozarevic/hookline/actions/workflows/tests.yml)
+
 Durable webhook relay built with Laravel. Inbound webhooks are verified, stored, and forwarded to your destinations with retries, exponential backoff, dead-lettering, and manual replay.
 
-Portfolio demo, not a hosted product. Shows how to run capture, fan-out, and delivery as separate concerns with a small operator panel.
+Portfolio demo, not a hosted product.
 
 ## What it does
 
@@ -17,7 +19,7 @@ Portfolio demo, not a hosted product. Shows how to run capture, fan-out, and del
 | **Safety** | SSRF guard on destination URLs; stuck in-flight deliveries released on a schedule |
 | **Panel** | Register, manage endpoints and destinations, inspect events, attempts, and replay |
 
-Structured ops logging goes to the `hookline` log channel (daily rotation).
+For how the pieces connect and why key decisions were made, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Stack
 
@@ -28,10 +30,10 @@ Structured ops logging goes to the `hookline` log channel (daily rotation).
 | Data | PostgreSQL 16 |
 | Queue / cache / sessions | Redis 7 |
 | HTTP hardening | `cboxdk/laravel-ssrf` on outbound delivery |
-| Local dev | Docker Compose (app, nginx, worker, scheduler, postgres, redis) |
+| Local dev | Docker Compose (app, nginx, worker, scheduler, node, postgres, redis) |
 | Quality | PHPUnit, PHP CS Fixer, Larastan; CI on push/PR |
 
-Domain logic lives under `Domain/`; HTTP and panel adapters under `Interfaces/`. No Filament; the panel is a handful of Livewire screens.
+Domain logic lives under `Domain/`; HTTP and panel adapters under `Interfaces/`.
 
 ## Run locally
 
@@ -42,15 +44,16 @@ cp -n .env.docker.example .env.docker.local   # first time only
 docker compose up --build
 ```
 
-Wait until the stack is up, then from your machine (in the project directory) seed inside the **app** container:
+Wait until the stack is up, then seed inside the **app** container:
 
 ```bash
 docker compose exec app php artisan db:seed
 ```
 
-On first start the `app`, `worker`, and `scheduler` containers run setup automatically: `composer install` (if `vendor/` is missing), `APP_KEY` generation (if empty), and `php artisan migrate`. The one-shot `node` service runs `npm ci && npm run build` before nginx starts, so Node on the host is optional.
+The seed command loads the demo user `user@example.com` / `password123`.
 
-The seed command above runs in Docker, not on the host PHP install. It loads the demo user `user@example.com` / `password123`. After `docker compose down -v`, run `docker compose up` then seed again the same way.
+On first start, the **app** container runs `composer install` (if `vendor/` is missing), `APP_KEY` generation (if empty), and `php artisan migrate`. The **node** container runs `npm ci && npm run build`. No local PHP, Composer, or Node install required.
+
 
 | Service | URL / access |
 | --- | --- |
@@ -61,73 +64,25 @@ The seed command above runs in Docker, not on the host PHP install. It loads the
 | Worker | `docker compose logs -f worker` |
 | Scheduler | `docker compose logs -f scheduler` |
 
-Host ports are offset from the usual defaults so Hookline is less likely to clash with other local services. If one is still in use, change the **left** side of the mapping in `compose.yaml` (e.g. `8085:80` → `9085:80`) and update `APP_URL` in `.env.docker.local` to match.
+Host ports are offset from the usual defaults so Hookline is less likely to clash with other local services. If one is still in use, change the mapping in `compose.yaml` (e.g. `8085:80` → `9085:80`) and update `APP_URL` in `.env.docker.local` to match.
 
 Stop: `docker compose down`. Wipe DB volume: `docker compose down -v`.
 
-Tailwind iteration without rebuilding the stack: `npm run build` on the host.
+### Frontend assets
 
-## Flow
+With the stack running, use the **node** container (same pattern as `app` for PHP):
 
-Setup (panel): create an **endpoint** (capture token + signing secret) and one or more **destinations** per endpoint. Runtime path:
-
-```mermaid
-flowchart TB
-  subgraph setup["Setup - panel"]
-    EP[Endpoint + whsec signing secret]
-    DSTCFG[Active destinations]
-    EP -.-> CAP
-    DSTCFG -.-> FO
-  end
-
-  subgraph capture["Capture - POST /capture/{token}"]
-    P([Provider]) --> POST[Inbound POST]
-    POST --> VAL{CaptureWebhookRequest}
-    VAL -->|404, 413, 401, 400, 429| REJ[Reject JSON]
-    VAL --> CAP[CaptureWebhook]
-    CAP --> DUP{duplicate webhook-id?}
-    DUP -->|yes| R200[200 - existing row kept]
-    DUP -->|no| TXN[DB transaction]
-    TXN --> EVT[(endpoint_events)]
-    TXN --> FO[FanOutDeliveries]
-    FO --> DLV[(deliveries, pending)]
-    TXN --> R202[202 accepted]
-    DLV --> DISP[DeliverDelivery::dispatch x N]
-  end
-
-  subgraph deliver["Deliver - queue worker"]
-    DISP --> Q[(Redis queue)]
-    Q --> JOB[DeliverDelivery job]
-    JOB --> CLAIM[pending to in_flight]
-    CLAIM --> HTTP[SSRF-safe POST, signed]
-    HTTP --> ATT[(delivery_attempts)]
-    HTTP --> APP([Destination URL])
-    HTTP --> OUT{outcome}
-    OUT -->|2xx| OK[succeeded]
-    OUT -->|4xx, SSRF blocked| DEAD[dead]
-    OUT -->|5xx, 429, connection error| RET[pending, backoff]
-    RET -->|delayed dispatch| Q
-  end
-
-  subgraph scheduler["Scheduler - every minute"]
-    SCH[schedule:work] --> DUE[DispatchDueDeliveries]
-    SCH --> REL[ReleaseStuckDeliveries]
-    DUE -->|pending where next_attempt_at due| Q
-    REL -->|in_flight past timeout to pending| RET
-  end
-
-  subgraph replay["Replay - panel"]
-    OP([Operator]) --> REP[ReplayDelivery]
-    REP -->|reset attempts, pending| Q
-  end
+```bash
+docker compose exec node npm run build   # rebuild after CSS changes
+docker compose exec node npm run dev     # Vite dev server on port 5173
 ```
 
-Capture: gates run before domain logic; idempotency is `(endpoint_id, webhook-id)` so duplicates never fan out again. Deliver: each job claims one row, records an attempt, then succeeds, dies, or schedules retry (capped by destination `max_attempts`). Scheduler: dispatches any due pending rows (backup if a delayed job was missed) and releases rows stuck in `in_flight`.
+Run `dev` in a second terminal for live reload while editing CSS. Run `build` when you want compiled assets without the dev server.
 
 ## Demo walkthrough
 
 1. Log in at http://localhost:8085/login with `user@example.com` / `password123` (from the Docker seed step above).
-2. **Endpoints**, then **New endpoint**. Copy the capture token and signing secret from the show page.
+2. **Endpoints**, then **Create endpoint**. Copy the capture token and signing secret from the show page.
 3. Add a **destination** URL (e.g. [webhook.site](https://webhook.site) or a local listener).
 4. Send a signed capture request. The panel show page includes a curl recipe; signing follows Standard Webhooks (`webhook-id`, `webhook-timestamp`, `webhook-signature` over `id.timestamp.body`). Official [client libraries](https://github.com/standard-webhooks/standard-webhooks) work for generating signatures.
 5. Open **Events** to see the payload, delivery status, attempt log, and **Replay** on failed or dead deliveries.
@@ -136,14 +91,16 @@ First capture returns `202` with `{ "deduplication_key": "..." }`. Sending the s
 
 ## Tests and static analysis
 
-On the host (Postgres + Redis running, or use CI):
+With the stack running (see [Run locally](#run-locally)):
 
 ```bash
-composer test       # php artisan test (115 tests)
-composer cs-check   # PHP CS Fixer dry-run
-composer analyse    # PHPStan / Larastan
-composer cs         # apply fixes
+docker compose exec app composer test       # php artisan test
+docker compose exec app composer cs-check   # PHP CS Fixer dry-run
+docker compose exec app composer analyse    # PHPStan / Larastan
+docker compose exec app composer cs         # apply fixes
 ```
+
+No local PHP or Composer install required - commands run inside the `app` container. Postgres includes a `hookline_testing` database for the test suite.
 
 GitHub Actions runs the same suite on every push and pull request to `main`.
 
