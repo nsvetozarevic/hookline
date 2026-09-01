@@ -17,6 +17,8 @@ class IndexEndpointComponent extends Component
 {
     public CreateEndpointForm $form;
 
+    public bool $showCreateModal = false;
+
     public function render(): View
     {
         return view('panel.endpoints.index', [
@@ -25,6 +27,18 @@ class IndexEndpointComponent extends Component
                 ->latest()
                 ->get(),
         ]);
+    }
+
+    public function openCreateModal(): void
+    {
+        $this->showCreateModal = true;
+    }
+
+    public function closeCreateModal(): void
+    {
+        $this->showCreateModal = false;
+        $this->form->reset();
+        $this->resetValidation();
     }
 
     public function storeEndpoint(StoreEndpoint $storeEndpoint): void

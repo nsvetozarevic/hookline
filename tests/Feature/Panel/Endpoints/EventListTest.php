@@ -28,7 +28,7 @@ class EventListTest extends TestCase
         $this->actingAs($user);
 
         Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
-            ->assertSee('No events yet — try the curl above.');
+            ->assertSee('No events yet. Try the curl command above.');
     }
 
     #[Test]
@@ -45,7 +45,7 @@ class EventListTest extends TestCase
         $this->actingAs($user);
 
         Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
-            ->assertDontSee('No events yet — try the curl above.')
+            ->assertDontSee('No events yet. Try the curl command above.')
             ->assertSee('#'.$endpointEvent->id)
             ->assertSee(route(WebRoute::ShowEvents, $endpointEvent), false)
             ->assertSee('evt_visible')

@@ -28,6 +28,8 @@ class ShowEndpointComponent extends Component
 
     public CreateDestinationForm $form;
 
+    public bool $showAddDestinationModal = false;
+
     public function mount(): void
     {
         $this->authorize('view', $this->endpoint);
@@ -54,6 +56,18 @@ class ShowEndpointComponent extends Component
         ]);
     }
 
+    public function openAddDestinationModal(): void
+    {
+        $this->showAddDestinationModal = true;
+    }
+
+    public function closeAddDestinationModal(): void
+    {
+        $this->showAddDestinationModal = false;
+        $this->form->reset();
+        $this->resetValidation();
+    }
+
     public function storeDestination(StoreDestination $storeDestination): void
     {
         $this->authorize('update', $this->endpoint);
@@ -65,7 +79,7 @@ class ShowEndpointComponent extends Component
             url: $this->form->url,
         ));
 
-        $this->form->reset();
+        $this->closeAddDestinationModal();
     }
 
     public function updateDestination(int $destinationId, UpdateDestination $updateDestination): void
