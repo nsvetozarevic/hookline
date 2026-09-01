@@ -25,6 +25,8 @@ if [ -f .env ] && ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
     php artisan key:generate --force --no-interaction
 fi
 
-php artisan migrate --force --no-interaction
+if [ "$1" = "php-fpm" ]; then
+    php artisan migrate --force --no-interaction
+fi
 
 exec docker-php-entrypoint "$@"

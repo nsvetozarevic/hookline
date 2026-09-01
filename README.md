@@ -54,12 +54,14 @@ The seed command above runs in Docker, not on the host PHP install. It loads the
 
 | Service | URL / access |
 | --- | --- |
-| App | http://localhost:8080 |
-| Health | http://localhost:8080/up |
+| App | http://localhost:8085 |
+| Health | http://localhost:8085/up |
 | Postgres | `localhost:5434` - user/pass/db: `hookline` / `secret` / `hookline` |
-| Redis | `localhost:6379` |
+| Redis | `localhost:6380` |
 | Worker | `docker compose logs -f worker` |
 | Scheduler | `docker compose logs -f scheduler` |
+
+Host ports are offset from the usual defaults so Hookline is less likely to clash with other local services. If one is still in use, change the **left** side of the mapping in `compose.yaml` (e.g. `8085:80` → `9085:80`) and update `APP_URL` in `.env.docker.local` to match.
 
 Stop: `docker compose down`. Wipe DB volume: `docker compose down -v`.
 
@@ -124,7 +126,7 @@ Capture: gates run before domain logic; idempotency is `(endpoint_id, webhook-id
 
 ## Demo walkthrough
 
-1. Log in at http://localhost:8080/login with `user@example.com` / `password123` (from the Docker seed step above).
+1. Log in at http://localhost:8085/login with `user@example.com` / `password123` (from the Docker seed step above).
 2. **Endpoints**, then **New endpoint**. Copy the capture token and signing secret from the show page.
 3. Add a **destination** URL (e.g. [webhook.site](https://webhook.site) or a local listener).
 4. Send a signed capture request. The panel show page includes a curl recipe; signing follows Standard Webhooks (`webhook-id`, `webhook-timestamp`, `webhook-signature` over `id.timestamp.body`). Official [client libraries](https://github.com/standard-webhooks/standard-webhooks) work for generating signatures.
