@@ -11,141 +11,181 @@
         },
     }"
 >
-    <p class="text-zinc-400">
-        <a href="{{ route(WebRoute::IndexEndpoints) }}" class="underline">Endpoints</a>
-        <span class="text-zinc-600"> / </span>
-        <span class="text-zinc-50">{{ $endpoint->name }}</span>
-    </p>
+    <nav class="hl-breadcrumb">
+        <a href="{{ route(WebRoute::IndexEndpoints) }}">Endpoints</a>
+        <span class="text-slate-300"> / </span>
+        <span class="text-slate-700">{{ $endpoint->name }}</span>
+    </nav>
 
-    <h1 class="mt-4 text-xl text-zinc-50">{{ $endpoint->name }}</h1>
-    <p class="mt-2 text-zinc-400">
-        @if ($endpoint->provider)
-            {{ $endpoint->provider }} ·
-        @endif
-        {{ $endpoint->is_active ? 'Active' : 'Inactive' }}
-    </p>
+    <div class="mt-4 flex flex-wrap items-center gap-3">
+        <h1 class="hl-page-title">{{ $endpoint->name }}</h1>
+        <span @class([
+            'hl-badge',
+            'hl-badge-succeeded' => $endpoint->is_active,
+            'hl-badge-dead' => ! $endpoint->is_active,
+        ])>{{ $endpoint->is_active ? 'Active' : 'Inactive' }}</span>
+    </div>
 
-    <dl class="mt-10 space-y-6">
+    @if ($endpoint->provider)
+        <p class="hl-muted mt-1">{{ $endpoint->provider }}</p>
+    @endif
+
+    <div class="hl-card mt-8 space-y-6">
         <div>
-            <dt class="text-zinc-400">Capture URL</dt>
-            <dd class="mt-1 flex items-start justify-between gap-4">
-                <code class="break-all text-zinc-50">{{ $captureUrl }}</code>
-                <button type="button" class="shrink-0 text-zinc-50 underline" x-on:click="copy('url', @js($captureUrl))" x-text="copied === 'url' ? 'Copied' : 'Copy'"></button>
+            <dt class="hl-label">Capture URL</dt>
+            <dd class="mt-2 flex items-start justify-between gap-4">
+                <code class="hl-code-inline">{{ $captureUrl }}</code>
+                <button type="button" class="hl-btn-link shrink-0" x-on:click="copy('url', @js($captureUrl))" x-text="copied === 'url' ? 'Copied' : 'Copy'"></button>
             </dd>
         </div>
 
         <div>
-            <dt class="text-zinc-400">Capture token</dt>
-            <dd class="mt-1 flex items-start justify-between gap-4">
-                <code class="break-all text-zinc-50">{{ $endpoint->capture_token }}</code>
-                <button type="button" class="shrink-0 text-zinc-50 underline" x-on:click="copy('token', @js($endpoint->capture_token))" x-text="copied === 'token' ? 'Copied' : 'Copy'"></button>
+            <dt class="hl-label">Capture token</dt>
+            <dd class="mt-2 flex items-start justify-between gap-4">
+                <code class="hl-code-inline">{{ $endpoint->capture_token }}</code>
+                <button type="button" class="hl-btn-link shrink-0" x-on:click="copy('token', @js($endpoint->capture_token))" x-text="copied === 'token' ? 'Copied' : 'Copy'"></button>
             </dd>
         </div>
 
         <div>
-            <dt class="text-zinc-400">Signing secret</dt>
-            <dd class="mt-1 flex items-start justify-between gap-4">
-                <code class="break-all text-zinc-50">{{ $currentSigningSecret->secret }}</code>
-                <button type="button" class="shrink-0 text-zinc-50 underline" x-on:click="copy('secret', @js($currentSigningSecret->secret))" x-text="copied === 'secret' ? 'Copied' : 'Copy'"></button>
+            <dt class="hl-label">Signing secret</dt>
+            <dd class="mt-2 flex items-start justify-between gap-4">
+                <code class="hl-code-inline">{{ $currentSigningSecret->secret }}</code>
+                <button type="button" class="hl-btn-link shrink-0" x-on:click="copy('secret', @js($currentSigningSecret->secret))" x-text="copied === 'secret' ? 'Copied' : 'Copy'"></button>
             </dd>
-            <button type="button" wire:click="rotateSigningSecret" class="mt-2 border border-zinc-500 px-4 py-2 text-zinc-50 hover:bg-zinc-800">Rotate</button>
+            <button type="button" wire:click="rotateSigningSecret" class="hl-btn-secondary mt-3">Rotate secret</button>
         </div>
 
         @foreach ($previousSigningSecrets as $previousSigningSecret)
             <div wire:key="previous-signing-secret-{{ $previousSigningSecret->id }}">
-                <dt class="text-zinc-400">Previous signing secret</dt>
-                <dd class="mt-1 flex items-start justify-between gap-4">
-                    <code class="break-all text-zinc-50">{{ $previousSigningSecret->secret }}</code>
-                    <button type="button" class="shrink-0 text-zinc-50 underline" x-on:click="copy('previous-{{ $previousSigningSecret->id }}', @js($previousSigningSecret->secret))" x-text="copied === 'previous-{{ $previousSigningSecret->id }}' ? 'Copied' : 'Copy'"></button>
+                <dt class="hl-label">Previous signing secret</dt>
+                <dd class="mt-2 flex items-start justify-between gap-4">
+                    <code class="hl-code-inline">{{ $previousSigningSecret->secret }}</code>
+                    <button type="button" class="hl-btn-link shrink-0" x-on:click="copy('previous-{{ $previousSigningSecret->id }}', @js($previousSigningSecret->secret))" x-text="copied === 'previous-{{ $previousSigningSecret->id }}' ? 'Copied' : 'Copy'"></button>
                 </dd>
-                <p class="mt-1 text-zinc-400">Expires {{ $previousSigningSecret->expires_at->toDateTimeString() }}</p>
+                <p class="hl-muted mt-1">Expires {{ $previousSigningSecret->expires_at->toDateTimeString() }}</p>
             </div>
         @endforeach
-    </dl>
+    </div>
 
-    <h2 class="mt-10 text-zinc-50">Send a test</h2>
-    <pre class="mt-2 overflow-x-auto whitespace-pre-wrap border border-zinc-800 p-3 text-zinc-50">curl -X POST {{ $captureUrl }} \
+    <div class="mt-8">
+        <h2 class="hl-section-title">Send a test</h2>
+        <pre class="hl-code mt-3">curl -X POST {{ $captureUrl }} \
   -H 'content-type: application/json' \
   -H 'webhook-id: msg_demo' \
   -H 'webhook-timestamp: &lt;unix seconds&gt;' \
   -H 'webhook-signature: v1,&lt;base64 HMAC-SHA256 of id.timestamp.body&gt;' \
   -d '{"ok":true}'</pre>
-    <p class="mt-3 text-zinc-400">Compute the signature as in README.md: HMAC-SHA256 of webhook-id + "." + webhook-timestamp + "." + raw body, keyed with the decoded signing secret.</p>
+        <p class="hl-muted mt-3">HMAC-SHA256 of webhook-id + "." + webhook-timestamp + "." + raw body, keyed with the decoded signing secret.</p>
+    </div>
 
-    <h2 class="mt-10 text-zinc-50">Destinations</h2>
-    <form wire:submit="storeDestination" class="mt-4 space-y-4">
-        <div>
-            <label for="destination-url" class="block text-zinc-400">URL</label>
-            <input
-                id="destination-url"
-                type="url"
-                wire:model="form.url"
-                required
-                placeholder="https://example.com/webhooks"
-                class="mt-1 w-full border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-50"
-            >
-            @error('form.url')
-                <p class="mt-1 text-red-400">{{ $message }}</p>
-            @enderror
+    <div class="hl-card mt-8">
+        <div class="flex items-start justify-between gap-4">
+            <h2 class="hl-section-title">Destinations</h2>
+            <button type="button" wire:click="openAddDestinationModal" class="hl-btn-primary shrink-0">
+                Add destination
+            </button>
         </div>
 
-        <button type="submit" class="border border-zinc-500 px-4 py-2 text-zinc-50 hover:bg-zinc-800">
-            Add destination
-        </button>
-    </form>
+        @if ($showAddDestinationModal)
+            <div class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="add-destination-title">
+                <div class="hl-modal-backdrop" wire:click="closeAddDestinationModal"></div>
 
-    @if ($destinations->isEmpty())
-        <p class="mt-4 text-zinc-400">No destinations yet — add one to fan out captured events.</p>
-    @else
-        <ul class="mt-4 space-y-2">
-            @foreach ($destinations as $destination)
-                <li wire:key="destination-{{ $destination->id }}" class="border border-zinc-800 px-3 py-2 text-zinc-400">
-                    <span class="break-all text-zinc-50">{{ $destination->url }}</span>
-                    <span> · {{ $destination->is_active ? 'Active' : 'Inactive' }}</span>
-                    <button
-                        type="button"
-                        wire:click="updateDestination({{ $destination->id }})"
-                        class="ml-2 text-zinc-50 underline"
-                    >
-                        {{ $destination->is_active ? 'Deactivate' : 'Activate' }}
-                    </button>
-                    <button
-                        type="button"
-                        wire:click="deleteDestination({{ $destination->id }})"
-                        wire:confirm="Delete this destination?"
-                        class="ml-2 text-red-400 underline"
-                    >
-                        Delete
-                    </button>
-                </li>
-            @endforeach
-        </ul>
-    @endif
+                <div class="relative w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+                    <div class="flex items-start justify-between gap-4">
+                        <h2 id="add-destination-title" class="hl-section-title">New destination</h2>
+                        <button type="button" wire:click="closeAddDestinationModal" class="text-slate-400 transition hover:text-slate-600" aria-label="Close">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5">
+                                <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/>
+                            </svg>
+                        </button>
+                    </div>
 
-    <h2 class="mt-10 text-zinc-50">Events</h2>
-    @if ($endpointEvents->isEmpty())
-        <p class="mt-4 text-zinc-400">No events yet — try the curl above.</p>
-    @else
-        <ul class="mt-4 space-y-2">
-            @foreach ($endpointEvents as $endpointEvent)
-                <li wire:key="endpoint-event-{{ $endpointEvent->id }}" class="border border-zinc-800 px-3 py-2 text-zinc-400">
-                    <a href="{{ route(WebRoute::ShowEvents, $endpointEvent) }}" class="text-zinc-50 underline">#{{ $endpointEvent->id }}</a>
-                    <span title="{{ $endpointEvent->deduplication_key }}"> · {{ Str::limit($endpointEvent->deduplication_key, 32) }}</span>
-                    <span> · {{ $endpointEvent->headers['content-type'] ?? '—' }}</span>
-                    <span> · {{ $endpointEvent->created_at->toDateTimeString() }}</span>
-                    <span> · {{ strlen($endpointEvent->payload) }} B</span>
-                </li>
-            @endforeach
-        </ul>
-        @if ($endpointEvents->hasPages())
-            <div class="mt-4 flex gap-4">
-                @if (! $endpointEvents->onFirstPage())
-                    <button type="button" wire:click="previousPage" class="text-zinc-50 underline">Previous</button>
-                @endif
-                @if ($endpointEvents->hasMorePages())
-                    <button type="button" wire:click="nextPage" class="text-zinc-50 underline">Next</button>
-                @endif
+                    <form wire:submit="storeDestination" class="mt-4 space-y-4">
+                        <div>
+                            <label for="destination-url" class="hl-label">URL</label>
+                            <input
+                                id="destination-url"
+                                type="url"
+                                wire:model="form.url"
+                                required
+                                autofocus
+                                placeholder="https://example.com/webhooks"
+                                class="hl-input"
+                            >
+                            @error('form.url')
+                                <p class="hl-error">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-2">
+                            <button type="button" wire:click="closeAddDestinationModal" class="hl-btn-secondary">
+                                Cancel
+                            </button>
+                            <button type="submit" class="hl-btn-primary">
+                                Add destination
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         @endif
-    @endif
+
+        @if ($destinations->isEmpty())
+            <p class="hl-muted mt-4">No destinations yet. Add one to fan out captured events.</p>
+        @else
+            <ul class="mt-4 space-y-2">
+                @foreach ($destinations as $destination)
+                    <li wire:key="destination-{{ $destination->id }}" class="hl-list-item text-sm">
+                        <span class="font-mono text-slate-800 break-all">{{ $destination->url }}</span>
+                        <span class="hl-muted"> · {{ $destination->is_active ? 'Active' : 'Inactive' }}</span>
+                        <button
+                            type="button"
+                            wire:click="updateDestination({{ $destination->id }})"
+                            class="hl-btn-link ml-2"
+                        >
+                            {{ $destination->is_active ? 'Deactivate' : 'Activate' }}
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="deleteDestination({{ $destination->id }})"
+                            wire:confirm="Delete this destination?"
+                            class="hl-btn-danger ml-2"
+                        >
+                            Delete
+                        </button>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+    </div>
+
+    <div class="mt-8">
+        <h2 class="hl-section-title">Events</h2>
+        @if ($endpointEvents->isEmpty())
+            <p class="hl-muted mt-4">No events yet. Try the curl command above.</p>
+        @else
+            <ul class="mt-4 space-y-2">
+                @foreach ($endpointEvents as $endpointEvent)
+                    <li wire:key="endpoint-event-{{ $endpointEvent->id }}" class="hl-list-item text-sm">
+                        <a href="{{ route(WebRoute::ShowEvents, $endpointEvent) }}" class="font-medium text-indigo-600 hover:text-indigo-700">#{{ $endpointEvent->id }}</a>
+                        <span class="hl-muted" title="{{ $endpointEvent->deduplication_key }}"> · {{ Str::limit($endpointEvent->deduplication_key, 32) }}</span>
+                        <span class="hl-muted"> · {{ $endpointEvent->headers['content-type'] ?? '-' }}</span>
+                        <span class="hl-muted"> · {{ $endpointEvent->created_at->toDateTimeString() }}</span>
+                        <span class="hl-muted"> · {{ strlen($endpointEvent->payload) }} B</span>
+                    </li>
+                @endforeach
+            </ul>
+            @if ($endpointEvents->hasPages())
+                <div class="mt-4 flex gap-4">
+                    @if (! $endpointEvents->onFirstPage())
+                        <button type="button" wire:click="previousPage" class="hl-btn-link">Previous</button>
+                    @endif
+                    @if ($endpointEvents->hasMorePages())
+                        <button type="button" wire:click="nextPage" class="hl-btn-link">Next</button>
+                    @endif
+                </div>
+            @endif
+        @endif
+    </div>
 </div>

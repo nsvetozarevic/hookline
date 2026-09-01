@@ -130,6 +130,8 @@ class ShowEndpointComponentTest extends TestCase
         $this->actingAs($user);
 
         Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
+            ->call('openAddDestinationModal')
+            ->assertSet('showAddDestinationModal', true)
             ->set('form.url', 'https://example.com/webhooks')
             ->call('storeDestination')
             ->assertHasNoErrors()
@@ -150,6 +152,7 @@ class ShowEndpointComponentTest extends TestCase
         $this->actingAs($user);
 
         Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
+            ->call('openAddDestinationModal')
             ->set('form.url', 'https://169.254.169.254/latest/meta-data')
             ->call('storeDestination')
             ->assertHasErrors(['form.url']);

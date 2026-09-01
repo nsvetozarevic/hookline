@@ -2,116 +2,130 @@
 @use(Illuminate\Support\Str)
 
 <div>
-    <p class="text-zinc-400">
-        <a href="{{ route(WebRoute::IndexEndpoints) }}" class="underline">Endpoints</a>
-        <span class="text-zinc-600"> / </span>
-        <a href="{{ route(WebRoute::ShowEndpoints, $endpointEvent->endpoint) }}" class="underline">{{ $endpointEvent->endpoint->name }}</a>
-        <span class="text-zinc-600"> / </span>
-        <span class="text-zinc-50">#{{ $endpointEvent->id }}</span>
-    </p>
+    <nav class="hl-breadcrumb">
+        <a href="{{ route(WebRoute::IndexEndpoints) }}">Endpoints</a>
+        <span class="text-slate-300"> / </span>
+        <a href="{{ route(WebRoute::ShowEndpoints, $endpointEvent->endpoint) }}">{{ $endpointEvent->endpoint->name }}</a>
+        <span class="text-slate-300"> / </span>
+        <span class="text-slate-700">#{{ $endpointEvent->id }}</span>
+    </nav>
 
-    <h1 class="mt-4 text-xl text-zinc-50">Event #{{ $endpointEvent->id }}</h1>
-    <p class="mt-2 text-zinc-400">
-        <span title="{{ $endpointEvent->deduplication_key }}">{{ $endpointEvent->deduplication_key }}</span>
+    <h1 class="hl-page-title mt-4">Event #{{ $endpointEvent->id }}</h1>
+    <p class="hl-muted mt-1">
+        <span class="font-mono" title="{{ $endpointEvent->deduplication_key }}">{{ $endpointEvent->deduplication_key }}</span>
         <span> · {{ $endpointEvent->created_at->toDateTimeString() }}</span>
     </p>
 
-    <h2 class="mt-10 text-zinc-50">Headers</h2>
-    @if ($endpointEvent->headers === [])
-        <p class="mt-4 text-zinc-400">No headers.</p>
-    @else
-        <table class="mt-4 w-full border-collapse text-left">
-            <tbody>
-                @foreach ($endpointEvent->headers as $name => $value)
-                    <tr class="border-b border-zinc-800">
-                        <th class="py-2 pr-4 font-normal text-zinc-400">{{ $name }}</th>
-                        <td class="py-2 text-zinc-50">{{ $value }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif
+    <div class="hl-card mt-8">
+        <h2 class="hl-section-title">Headers</h2>
+        @if ($endpointEvent->headers === [])
+            <p class="hl-muted mt-4">No headers.</p>
+        @else
+            <table class="hl-table mt-4">
+                <tbody>
+                    @foreach ($endpointEvent->headers as $name => $value)
+                        <tr>
+                            <th class="w-1/3 font-medium text-slate-500">{{ $name }}</th>
+                            <td class="font-mono text-slate-800">{{ $value }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+    </div>
 
-    <h2 class="mt-10 text-zinc-50">Payload</h2>
-    <pre class="mt-4 overflow-x-auto whitespace-pre-wrap border border-zinc-800 p-3 text-zinc-50">{{ $payloadForDisplay }}</pre>
-    @if ($payloadIsTruncated)
-        <p class="mt-3 text-zinc-400">Truncated, {{ (int) ceil(strlen($endpointEvent->payload) / 1024) }} KB total.</p>
-    @endif
+    <div class="mt-8">
+        <h2 class="hl-section-title">Payload</h2>
+        <pre class="hl-code mt-3">{{ $payloadForDisplay }}</pre>
+        @if ($payloadIsTruncated)
+            <p class="hl-muted mt-3">Truncated, {{ (int) ceil(strlen($endpointEvent->payload) / 1024) }} KB total.</p>
+        @endif
+    </div>
 
-    <h2 class="mt-10 text-zinc-50">Deliveries</h2>
-    @if ($deliveries->isEmpty())
-        <p class="mt-4 text-zinc-400">No deliveries.</p>
-    @else
-        <table class="mt-4 w-full border-collapse text-left">
-            <thead>
-                <tr class="border-b border-zinc-800 text-zinc-400">
-                    <th class="py-2 pr-4 font-normal">Destination</th>
-                    <th class="py-2 pr-4 font-normal">Status</th>
-                    <th class="py-2 pr-4 font-normal">Attempts</th>
-                    <th class="py-2 pr-4 font-normal">Last response</th>
-                    <th class="py-2 pr-4 font-normal">Last result</th>
-                    <th class="py-2 pr-4 font-normal">Last error</th>
-                    <th class="py-2 font-normal"></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($deliveries as $delivery)
-                    <tr class="border-b border-zinc-800" wire:key="delivery-{{ $delivery->id }}">
-                        <td class="py-2 pr-4 text-zinc-50">{{ $delivery->destination->url }}</td>
-                        <td class="py-2 pr-4 text-zinc-50">{{ $delivery->status->value }}</td>
-                        <td class="py-2 pr-4 text-zinc-50">{{ $delivery->attempts }}</td>
-                        <td class="py-2 pr-4 text-zinc-50">{{ $delivery->last_status_code ?? '—' }}</td>
-                        <td class="py-2 pr-4 text-zinc-50">{{ $delivery->latestDeliveryAttempt?->result->value ?? '—' }}</td>
-                        <td class="py-2 pr-4 text-zinc-50" @if ($delivery->last_error) title="{{ $delivery->last_error }}" @endif>
-                            {{ $delivery->last_error ? Str::limit($delivery->last_error, 48) : '—' }}
-                        </td>
-                        <td class="py-2">
-                            @if ($delivery->status->isReplayable())
-                                <button
-                                    type="button"
-                                    wire:click="replayDelivery({{ $delivery->id }})"
-                                    class="text-zinc-400 underline"
-                                >
-                                    Replay
-                                </button>
-                            @endif
-                        </td>
+    <div class="hl-card mt-8 overflow-x-auto">
+        <h2 class="hl-section-title">Deliveries</h2>
+        @if ($deliveries->isEmpty())
+            <p class="hl-muted mt-4">No deliveries.</p>
+        @else
+            <table class="hl-table mt-4">
+                <thead>
+                    <tr>
+                        <th>Destination</th>
+                        <th>Status</th>
+                        <th>Attempts</th>
+                        <th>Last response</th>
+                        <th>Last result</th>
+                        <th>Last error</th>
+                        <th></th>
                     </tr>
-                    @if ($delivery->deliveryAttempts->isNotEmpty())
-                        <tr wire:key="delivery-attempts-{{ $delivery->id }}">
-                            <td colspan="7" class="py-2 pl-4">
-                                <details>
-                                    <summary class="cursor-pointer text-zinc-400">Attempt log</summary>
-                                    <table class="mt-2 w-full border-collapse text-left text-zinc-400">
-                                        <thead>
-                                            <tr class="border-b border-zinc-800">
-                                                <th class="py-1 pr-4 font-normal">#</th>
-                                                <th class="py-1 pr-4 font-normal">Result</th>
-                                                <th class="py-1 pr-4 font-normal">Response</th>
-                                                <th class="py-1 pr-4 font-normal">Duration</th>
-                                                <th class="py-1 pr-4 font-normal">Error</th>
-                                                <th class="py-1 font-normal">At</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($delivery->deliveryAttempts as $attempt)
-                                                <tr wire:key="delivery-attempt-{{ $attempt->id }}" class="border-b border-zinc-800">
-                                                    <td class="py-1 pr-4 text-zinc-50">{{ $attempt->attempt_number }}</td>
-                                                    <td class="py-1 pr-4 text-zinc-50">{{ $attempt->result->value }}</td>
-                                                    <td class="py-1 pr-4 text-zinc-50">{{ $attempt->response_status ?? '—' }}</td>
-                                                    <td class="py-1 pr-4 text-zinc-50">{{ $attempt->duration_ms }} ms</td>
-                                                    <td class="py-1 pr-4 text-zinc-50">{{ $attempt->error ?? '—' }}</td>
-                                                    <td class="py-1 text-zinc-50">{{ $attempt->created_at->toDateTimeString() }}</td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </details>
+                </thead>
+                <tbody>
+                    @foreach ($deliveries as $delivery)
+                        <tr wire:key="delivery-{{ $delivery->id }}">
+                            <td class="max-w-xs font-mono text-xs break-all">{{ $delivery->destination->url }}</td>
+                            <td>
+                                <span @class([
+                                    'hl-badge',
+                                    'hl-badge-succeeded' => $delivery->status->value === 'succeeded',
+                                    'hl-badge-pending' => $delivery->status->value === 'pending',
+                                    'hl-badge-in_flight' => $delivery->status->value === 'in_flight',
+                                    'hl-badge-dead' => $delivery->status->value === 'dead',
+                                ])>{{ $delivery->status->value }}</span>
+                            </td>
+                            <td>{{ $delivery->attempts }}</td>
+                            <td class="font-mono">{{ $delivery->last_status_code ?? '-' }}</td>
+                            <td class="font-mono">{{ $delivery->latestDeliveryAttempt?->result->value ?? '-' }}</td>
+                            <td @if ($delivery->last_error) title="{{ $delivery->last_error }}" @endif>
+                                {{ $delivery->last_error ? Str::limit($delivery->last_error, 48) : '-' }}
+                            </td>
+                            <td>
+                                @if ($delivery->status->isReplayable())
+                                    <button
+                                        type="button"
+                                        wire:click="replayDelivery({{ $delivery->id }})"
+                                        class="hl-btn-link"
+                                    >
+                                        Replay
+                                    </button>
+                                @endif
                             </td>
                         </tr>
-                    @endif
-                @endforeach
-            </tbody>
-        </table>
-    @endif
+                        @if ($delivery->deliveryAttempts->isNotEmpty())
+                            <tr wire:key="delivery-attempts-{{ $delivery->id }}">
+                                <td colspan="7" class="py-3 pl-2">
+                                    <details>
+                                        <summary class="hl-btn-link cursor-pointer list-none">Attempt log</summary>
+                                        <table class="hl-table mt-3">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Result</th>
+                                                    <th>Response</th>
+                                                    <th>Duration</th>
+                                                    <th>Error</th>
+                                                    <th>At</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($delivery->deliveryAttempts as $attempt)
+                                                    <tr wire:key="delivery-attempt-{{ $attempt->id }}">
+                                                        <td>{{ $attempt->attempt_number }}</td>
+                                                        <td class="font-mono">{{ $attempt->result->value }}</td>
+                                                        <td class="font-mono">{{ $attempt->response_status ?? '-' }}</td>
+                                                        <td>{{ $attempt->duration_ms }} ms</td>
+                                                        <td>{{ $attempt->error ?? '-' }}</td>
+                                                        <td class="whitespace-nowrap">{{ $attempt->created_at->toDateTimeString() }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </details>
+                                </td>
+                            </tr>
+                        @endif
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+    </div>
 </div>

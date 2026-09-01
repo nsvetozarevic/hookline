@@ -60,6 +60,8 @@ class IndexEndpointComponentTest extends TestCase
         $this->actingAs($user);
 
         $component = Livewire::test(IndexEndpointComponent::class)
+            ->call('openCreateModal')
+            ->assertSet('showCreateModal', true)
             ->set('form.name', 'Stripe')
             ->set('form.provider', 'stripe')
             ->call('storeEndpoint')
@@ -97,6 +99,7 @@ class IndexEndpointComponentTest extends TestCase
         $this->actingAs($user);
 
         Livewire::test(IndexEndpointComponent::class)
+            ->call('openCreateModal')
             ->set('form.name', $invalidData['name'])
             ->set('form.provider', $invalidData['provider'])
             ->call('storeEndpoint')

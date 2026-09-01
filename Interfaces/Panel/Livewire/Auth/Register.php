@@ -8,7 +8,7 @@ use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
-#[Layout('layouts.panel')]
+#[Layout('layouts.auth')]
 class Register extends Component
 {
     public function render(): View
