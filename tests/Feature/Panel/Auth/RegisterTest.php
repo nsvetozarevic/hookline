@@ -7,6 +7,7 @@ namespace Tests\Feature\Panel\Auth;
 use App\Routing\WebRoute;
 use Domain\User\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\RateLimiter;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -25,6 +26,17 @@ class RegisterTest extends TestCase
             'name' => 'Nikola',
             'email' => 'nikola@example.com',
         ]);
+    }
+
+    #[Test]
+    public function register_is_rate_limited(): void
+    {
+        foreach (range(1, 5) as $ignored) {
+            RateLimiter::hit(md5('register'.'127.0.0.1'));
+        }
+
+        $this->post(route(WebRoute::Register), $this->validPayload())
+            ->assertTooManyRequests();
     }
 
     /**
