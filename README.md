@@ -40,7 +40,6 @@ Domain logic lives under `Domain/`; HTTP and panel adapters under `Interfaces/`.
 **Requirements:** Docker Desktop (Compose v2).
 
 ```bash
-cp -n .env.docker.example .env.docker.local   # first time only
 docker compose up --build
 ```
 

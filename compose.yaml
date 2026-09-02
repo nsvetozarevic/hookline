@@ -6,8 +6,6 @@ services:
     image: hookline-app
     volumes:
       - .:/var/www/html
-    env_file:
-      - .env.docker.local
     depends_on:
       postgres:
         condition: service_healthy
@@ -24,8 +22,6 @@ services:
     command: php artisan queue:work --verbose --sleep=1 --tries=1
     volumes:
       - .:/var/www/html
-    env_file:
-      - .env.docker.local
     depends_on:
       postgres:
         condition: service_healthy
@@ -43,8 +39,6 @@ services:
     command: php artisan schedule:work
     volumes:
       - .:/var/www/html
-    env_file:
-      - .env.docker.local
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,7 +85,9 @@ services:
   postgres:
     image: postgres:16-alpine
     env_file:
-      - .env.docker.local
+      - .env.docker.example
+      - path: .env.docker.local
+        required: false
     ports:
       - "5434:5432"
     volumes:
