@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Routing\ApiRoute;
 use Illuminate\Support\Facades\Route;
+use Interfaces\Api\Contracts\Deliveries\ShowDeliveryControllerContract;
 use Interfaces\Api\Contracts\EndpointEvents\IndexEndpointEventControllerContract;
 use Interfaces\Api\Contracts\EndpointEvents\ShowEndpointEventControllerContract;
 use Interfaces\Api\Contracts\Endpoints\IndexEndpointControllerContract;
@@ -26,15 +27,21 @@ Route::prefix('v{version}')
         Route::middleware('auth:sanctum')->group(function (): void {
             Route::delete('/tokens/current', DestroyCurrentTokenControllerContract::class)
                 ->name(ApiRoute::DestroyCurrentToken);
+
             Route::get('/user', ShowUserControllerContract::class)
                 ->name(ApiRoute::ShowUser);
+
             Route::get('/endpoints', IndexEndpointControllerContract::class)
                 ->name(ApiRoute::IndexEndpoints);
             Route::get('/endpoints/{endpoint}', ShowEndpointControllerContract::class)
                 ->name(ApiRoute::ShowEndpoints);
+
             Route::get('/endpoints/{endpoint}/events', IndexEndpointEventControllerContract::class)
                 ->name(ApiRoute::IndexEndpointEvents);
             Route::get('/events/{endpointEvent}', ShowEndpointEventControllerContract::class)
                 ->name(ApiRoute::ShowEvents);
+                
+            Route::get('/deliveries/{delivery}', ShowDeliveryControllerContract::class)
+                ->name(ApiRoute::ShowDeliveries);
         });
     });
