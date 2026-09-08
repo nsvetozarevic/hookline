@@ -15,9 +15,10 @@ Portfolio demo, not a hosted product.
 | **Fan-out** | One stored event creates one delivery row per active destination |
 | **Delivery** | Queue worker POSTs the original payload; signs outbound requests the same way |
 | **Retries** | Exponential backoff (configurable cap); scheduler dispatches due rows every minute |
-| **Dead letter** | Max attempts exhausted, terminal state; replay from the panel |
+| **Dead letter** | Max attempts exhausted, terminal state; replay from the panel or API |
 | **Safety** | SSRF guard on destination URLs; stuck in-flight deliveries released on a schedule |
 | **Panel** | Register, manage endpoints and destinations, inspect events, attempts, and replay |
+| **API** | Versioned API `/api/v1` for the same users as the panel: inspect endpoints, events, deliveries; replay. Auth is a bearer token from email + password (Laravel Sanctum). |
 
 For how the pieces connect and why key decisions were made, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -87,6 +88,31 @@ Run `dev` in a second terminal for live reload while editing CSS. Run `build` wh
 5. Open **Events** to see the payload, delivery status, attempt log, and **Replay** on failed or dead deliveries.
 
 First capture returns `202` with `{ "deduplication_key": "..." }`. Sending the same `webhook-id` again returns `200` without a new row.
+
+## API
+
+Same users as the panel. `POST /api/v1/tokens` with email and password returns a Sanctum personal access token (shown once). Everything except token create and `GET /api/v1/ping` requires `Authorization: Bearer …`. JSON `id` values are UUIDs (`public_id`). Capture stays `POST /capture/{token}` and is not part of this API.
+
+```bash
+curl -s -X POST http://localhost:8085/api/v1/tokens \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@example.com","password":"password123"}'
+
+curl -s http://localhost:8085/api/v1/endpoints \
+  -H 'Authorization: Bearer TOKEN' \
+  -H 'Accept: application/json'
+
+curl -s http://localhost:8085/api/v1/endpoints/ENDPOINT_ID/events \
+  -H 'Authorization: Bearer TOKEN' \
+  -H 'Accept: application/json'
+
+curl -s -X POST http://localhost:8085/api/v1/deliveries/DELIVERY_ID/replay \
+  -H 'Authorization: Bearer TOKEN' \
+  -H 'Accept: application/json'
+```
+
+Replay returns `202` when the delivery is `dead` or `succeeded`, and `422` while it is still `pending` or `in_flight`. Other users' resources are `403`.
 
 ## Tests and static analysis
 

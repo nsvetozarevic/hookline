@@ -2,7 +2,7 @@
 
 ## Overview
 
-Code is grouped by domain (`Domain/`) and entry-point adapter (`Interfaces/`). Domains organize business logic by concept; Interfaces organize it by caller - inbound HTTP, panel, console, and a future API - so domain code never depends on a specific transport. Framework glue stays in `app/`.
+Code is grouped by domain (`Domain/`) and entry-point adapter (`Interfaces/`). Domains organize business logic by concept; Interfaces organize it by caller - inbound HTTP, panel, JSON API, console - so domain code never depends on a specific transport. Framework glue stays in `app/`.
 
 ```
 Domain/Endpoint/Actions     CaptureWebhook, StoreEndpoint, RotateEndpointSigningSecret
@@ -16,6 +16,7 @@ Domain/Delivery/Models      Destination, DestinationSigningSecret, Delivery, Del
 Domain/User/Models          User
 
 Interfaces/Inbound          POST /capture/{captureToken}
+Interfaces/Api              /api/v{version} JSON for panel users (Sanctum tokens)
 Interfaces/Console          hookline:dispatch-due-deliveries, hookline:release-stuck-deliveries
 Interfaces/Panel            session UI (Livewire 4), Fortify CreateNewUser
 ```
@@ -73,7 +74,7 @@ flowchart TB
     REL -->|in_flight past timeout to pending| RET
   end
 
-  subgraph replay["Replay - panel"]
+  subgraph replay["Replay - panel / API"]
     OP([Operator]) --> REP[ReplayDelivery]
     REP -->|reset attempts, pending| Q
   end
@@ -113,7 +114,7 @@ Two scheduled commands back the queue up, every minute: `DispatchDueDeliveries` 
 
 **Guarded egress.** All outbound POSTs go through an SSRF guard (`cboxdk/laravel-ssrf`); blocked URLs are recorded and dead-lettered, not retried. Each attempt records status, duration, and a response snippet for the panel.
 
-Replay (from the panel) resets a `dead` or `succeeded` delivery to `pending` with zero attempts and dispatches immediately; `pending`/`in_flight` rows cannot be replayed.
+Replay (from the panel or `POST /api/v1/deliveries/{delivery}/replay`) resets a `dead` or `succeeded` delivery to `pending` with zero attempts and dispatches immediately; `pending`/`in_flight` rows cannot be replayed.
 
 ## Panel
 
@@ -123,11 +124,13 @@ Auth is headless Fortify, registration and login only. Panel routes sit under `/
 
 Signing secrets live in their own tables (`endpoint_signing_secrets`, `destination_signing_secrets`), not as a column: the current key is the row with `expires_at` null, and rotation gives the old key a grace expiry instead of deleting it.
 
+## API
 
+JSON API under `/api/v{version}` (`v1` today), for the same users as the panel. Auth is a Laravel Sanctum bearer token issued by email + password (`POST /api/v1/tokens`). Path versioning is explicit: `BindApiVersion` walks `config/api.php` and `bind()`s contract implementations up to the requested version; unknown versions 404. Routes live in `routes/api.php`, names in `app/Routing/ApiRoute`. Controllers, resources, and the token Form Request sit in `Interfaces/Api/V1`; contracts in `Interfaces/Api/Contracts`. `auth:sanctum` on everything except token create (`throttle:login`, same limiter as Fortify) and ping. Authorization reuses `EndpointPolicy` (owner). JSON `id` is `public_id` (UUID). The API is read plus replay; create/update of endpoints and destinations stays in the panel. Capture stays `POST /capture/{token}`.
 
 ## Conventions
 
-Route names are backed enums in `app/Routing/WebRoute` (`->name(WebRoute::Foo)`, `route(WebRoute::Foo)`). Paths stay strings in the route files.
+Route names are backed enums in `app/Routing/WebRoute` and `app/Routing/ApiRoute` (`->name(WebRoute::Foo)`, `route(WebRoute::Foo)`). Paths stay strings in the route files.
 
 Migrations have no `down()` (a custom stub removes it). Rolling back a table that holds captured webhooks would destroy data, so rollbacks are deliberately unsupported: schema changes are new `up()` migrations.
 
