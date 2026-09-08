@@ -10,4 +10,5 @@ enum ApiRoute: string
     case StoreToken = 'api.tokens.store';
     case DestroyCurrentToken = 'api.tokens.current.destroy';
     case ShowUser = 'api.user.show';
+    case IndexEndpoints = 'api.endpoints.index';
 }

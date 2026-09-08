@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Routing\ApiRoute;
 use Illuminate\Support\Facades\Route;
 use Interfaces\Api\Contracts\DestroyCurrentTokenControllerContract;
+use Interfaces\Api\Contracts\IndexEndpointControllerContract;
 use Interfaces\Api\Contracts\PingControllerContract;
 use Interfaces\Api\Contracts\ShowUserControllerContract;
 use Interfaces\Api\Contracts\StoreTokenControllerContract;
@@ -24,5 +25,7 @@ Route::prefix('v{version}')
                 ->name(ApiRoute::DestroyCurrentToken);
             Route::get('/user', ShowUserControllerContract::class)
                 ->name(ApiRoute::ShowUser);
+            Route::get('/endpoints', IndexEndpointControllerContract::class)
+                ->name(ApiRoute::IndexEndpoints);
         });
     });
