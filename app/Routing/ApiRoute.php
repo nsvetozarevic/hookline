@@ -13,4 +13,5 @@ enum ApiRoute: string
     case IndexEndpoints = 'api.endpoints.index';
     case ShowEndpoints = 'api.endpoints.show';
     case IndexEndpointEvents = 'api.endpoints.events.index';
+    case ShowEvents = 'api.events.show';
 }

@@ -11,6 +11,7 @@ return new class () extends Migration {
     {
         Schema::create('deliveries', function (Blueprint $table) {
             $table->id();
+            $table->uuid('public_id')->unique();
             $table->foreignId('endpoint_event_id')->constrained('endpoint_events')->cascadeOnDelete();
             $table->foreignId('destination_id')->constrained('destinations')->cascadeOnDelete();
             $table->string('status')->default('pending');

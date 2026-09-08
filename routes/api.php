@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Routing\ApiRoute;
 use Illuminate\Support\Facades\Route;
 use Interfaces\Api\Contracts\EndpointEvents\IndexEndpointEventControllerContract;
+use Interfaces\Api\Contracts\EndpointEvents\ShowEndpointEventControllerContract;
 use Interfaces\Api\Contracts\Endpoints\IndexEndpointControllerContract;
 use Interfaces\Api\Contracts\Endpoints\ShowEndpointControllerContract;
 use Interfaces\Api\Contracts\PingControllerContract;
@@ -33,5 +34,7 @@ Route::prefix('v{version}')
                 ->name(ApiRoute::ShowEndpoints);
             Route::get('/endpoints/{endpoint}/events', IndexEndpointEventControllerContract::class)
                 ->name(ApiRoute::IndexEndpointEvents);
+            Route::get('/events/{endpointEvent}', ShowEndpointEventControllerContract::class)
+                ->name(ApiRoute::ShowEvents);
         });
     });
