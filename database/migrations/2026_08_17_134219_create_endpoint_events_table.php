@@ -11,6 +11,7 @@ return new class () extends Migration {
     {
         Schema::create('endpoint_events', function (Blueprint $table) {
             $table->id();
+            $table->uuid('public_id')->unique();
             $table->foreignId('endpoint_id')->constrained('endpoints')->cascadeOnDelete();
             $table->string('deduplication_key');
             $table->jsonb('headers');

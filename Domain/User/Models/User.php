@@ -7,6 +7,7 @@ namespace Domain\User\Models;
 use Domain\Endpoint\Models\Endpoint;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -21,7 +22,21 @@ class User extends Authenticatable
 
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
+    use HasUuids;
     use Notifiable;
+
+    /**
+     * @return list<string>
+     */
+    public function uniqueIds(): array
+    {
+        return ['public_id'];
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'public_id';
+    }
 
     /**
      * @return HasMany<Endpoint, $this>

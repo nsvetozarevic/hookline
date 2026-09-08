@@ -167,8 +167,8 @@
         @else
             <ul class="mt-4 space-y-2">
                 @foreach ($endpointEvents as $endpointEvent)
-                    <li wire:key="endpoint-event-{{ $endpointEvent->id }}" class="hl-list-item text-sm">
-                        <a href="{{ route(WebRoute::ShowEvents, $endpointEvent) }}" class="font-medium text-indigo-600 hover:text-indigo-700">#{{ $endpointEvent->id }}</a>
+                    <li wire:key="endpoint-event-{{ $endpointEvent->public_id }}" class="hl-list-item text-sm">
+                        <a href="{{ route(WebRoute::ShowEvents, $endpointEvent) }}" class="font-medium text-indigo-600 hover:text-indigo-700">#{{ $endpointEvent->public_id }}</a>
                         <span class="hl-muted" title="{{ $endpointEvent->deduplication_key }}"> · {{ Str::limit($endpointEvent->deduplication_key, 32) }}</span>
                         <span class="hl-muted"> · {{ $endpointEvent->headers['content-type'] ?? '-' }}</span>
                         <span class="hl-muted"> · {{ $endpointEvent->created_at->toDateTimeString() }}</span>

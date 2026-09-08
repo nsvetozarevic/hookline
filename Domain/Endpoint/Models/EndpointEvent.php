@@ -6,6 +6,7 @@ namespace Domain\Endpoint\Models;
 
 use Domain\Delivery\Models\Delivery;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,20 @@ class EndpointEvent extends Model
 {
     /** @use HasFactory<\Database\Factories\EndpointEventFactory> */
     use HasFactory;
+    use HasUuids;
+
+    /**
+     * @return list<string>
+     */
+    public function uniqueIds(): array
+    {
+        return ['public_id'];
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'public_id';
+    }
 
     /**
      * @return BelongsTo<Endpoint, $this>

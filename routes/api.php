@@ -6,6 +6,7 @@ use App\Routing\ApiRoute;
 use Illuminate\Support\Facades\Route;
 use Interfaces\Api\Contracts\DestroyCurrentTokenControllerContract;
 use Interfaces\Api\Contracts\PingControllerContract;
+use Interfaces\Api\Contracts\ShowUserControllerContract;
 use Interfaces\Api\Contracts\StoreTokenControllerContract;
 use Interfaces\Api\Middleware\BindApiVersion;
 
@@ -17,7 +18,11 @@ Route::prefix('v{version}')
         Route::post('/tokens', StoreTokenControllerContract::class)
             ->middleware('throttle:login')
             ->name(ApiRoute::StoreToken);
-        Route::delete('/tokens/current', DestroyCurrentTokenControllerContract::class)
-            ->middleware('auth:sanctum')
-            ->name(ApiRoute::DestroyCurrentToken);
+
+        Route::middleware('auth:sanctum')->group(function (): void {
+            Route::delete('/tokens/current', DestroyCurrentTokenControllerContract::class)
+                ->name(ApiRoute::DestroyCurrentToken);
+            Route::get('/user', ShowUserControllerContract::class)
+                ->name(ApiRoute::ShowUser);
+        });
     });

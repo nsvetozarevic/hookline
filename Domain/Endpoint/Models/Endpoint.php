@@ -9,6 +9,7 @@ use Domain\User\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,6 +22,20 @@ class Endpoint extends Model
 {
     /** @use HasFactory<\Database\Factories\EndpointFactory> */
     use HasFactory;
+    use HasUuids;
+
+    /**
+     * @return list<string>
+     */
+    public function uniqueIds(): array
+    {
+        return ['public_id'];
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'public_id';
+    }
 
     /**
      * @return BelongsTo<User, $this>

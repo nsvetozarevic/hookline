@@ -11,6 +11,7 @@ return new class () extends Migration {
     {
         Schema::create('endpoints', function (Blueprint $table) {
             $table->id();
+            $table->uuid('public_id')->unique();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('capture_token', 64)->unique();

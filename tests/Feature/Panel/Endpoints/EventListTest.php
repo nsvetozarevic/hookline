@@ -46,7 +46,7 @@ class EventListTest extends TestCase
 
         Livewire::test(ShowEndpointComponent::class, ['endpoint' => $endpoint])
             ->assertDontSee('No events yet. Try the curl command above.')
-            ->assertSee('#'.$endpointEvent->id)
+            ->assertSee('#'.$endpointEvent->public_id)
             ->assertSee(route(WebRoute::ShowEvents, $endpointEvent), false)
             ->assertSee('evt_visible')
             ->assertSee('application/json')

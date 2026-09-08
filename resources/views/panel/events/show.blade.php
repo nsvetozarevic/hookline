@@ -7,10 +7,10 @@
         <span class="text-slate-300"> / </span>
         <a href="{{ route(WebRoute::ShowEndpoints, $endpointEvent->endpoint) }}">{{ $endpointEvent->endpoint->name }}</a>
         <span class="text-slate-300"> / </span>
-        <span class="text-slate-700">#{{ $endpointEvent->id }}</span>
+        <span class="text-slate-700">#{{ $endpointEvent->public_id }}</span>
     </nav>
 
-    <h1 class="hl-page-title mt-4">Event #{{ $endpointEvent->id }}</h1>
+    <h1 class="hl-page-title mt-4">Event #{{ $endpointEvent->public_id }}</h1>
     <p class="hl-muted mt-1">
         <span class="font-mono" title="{{ $endpointEvent->deduplication_key }}">{{ $endpointEvent->deduplication_key }}</span>
         <span> · {{ $endpointEvent->created_at->toDateTimeString() }}</span>
