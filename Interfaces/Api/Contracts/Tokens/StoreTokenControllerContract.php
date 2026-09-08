@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Interfaces\Api\Contracts;
+namespace Interfaces\Api\Contracts\Tokens;
 
 use Illuminate\Http\JsonResponse;
 use Interfaces\Api\V1\Requests\StoreTokenRequest;

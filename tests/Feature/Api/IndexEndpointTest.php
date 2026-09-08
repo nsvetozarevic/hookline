@@ -35,13 +35,12 @@ class IndexEndpointTest extends TestCase
                         'id' => $endpoint->public_id,
                         'name' => 'Stripe',
                         'provider' => 'stripe',
-                        'capture_token' => $endpoint->capture_token,
                         'is_active' => true,
-                        'created_at' => $endpoint->created_at?->toJSON(),
                     ],
                 ],
             ])
-            ->assertJsonMissing(['secret' => $endpoint->currentSigningSecret->secret]);
+            ->assertJsonMissing(['capture_token' => $endpoint->capture_token])
+            ->assertJsonMissing(['signing_secret' => $endpoint->currentSigningSecret->secret]);
     }
 
     #[Test]

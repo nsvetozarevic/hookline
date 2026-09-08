@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Interfaces\Api\V1\Controllers;
+namespace Interfaces\Api\V1\Controllers\Tokens;
 
 use Domain\User\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
-use Interfaces\Api\Contracts\StoreTokenControllerContract;
+use Interfaces\Api\Contracts\Tokens\StoreTokenControllerContract;
 use Interfaces\Api\V1\Requests\StoreTokenRequest;
 
 class StoreTokenController implements StoreTokenControllerContract

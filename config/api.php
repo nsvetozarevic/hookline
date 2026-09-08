@@ -2,16 +2,20 @@
 
 declare(strict_types=1);
 
-use Interfaces\Api\Contracts\DestroyCurrentTokenControllerContract;
-use Interfaces\Api\Contracts\IndexEndpointControllerContract;
+use Interfaces\Api\Contracts\EndpointEvents\IndexEndpointEventControllerContract;
+use Interfaces\Api\Contracts\Endpoints\IndexEndpointControllerContract;
+use Interfaces\Api\Contracts\Endpoints\ShowEndpointControllerContract;
 use Interfaces\Api\Contracts\PingControllerContract;
-use Interfaces\Api\Contracts\ShowUserControllerContract;
-use Interfaces\Api\Contracts\StoreTokenControllerContract;
-use Interfaces\Api\V1\Controllers\DestroyCurrentTokenController;
-use Interfaces\Api\V1\Controllers\IndexEndpointController;
+use Interfaces\Api\Contracts\Tokens\DestroyCurrentTokenControllerContract;
+use Interfaces\Api\Contracts\Tokens\StoreTokenControllerContract;
+use Interfaces\Api\Contracts\Users\ShowUserControllerContract;
+use Interfaces\Api\V1\Controllers\EndpointEvents\IndexEndpointEventController;
+use Interfaces\Api\V1\Controllers\Endpoints\IndexEndpointController;
+use Interfaces\Api\V1\Controllers\Endpoints\ShowEndpointController;
 use Interfaces\Api\V1\Controllers\PingController;
-use Interfaces\Api\V1\Controllers\ShowUserController;
-use Interfaces\Api\V1\Controllers\StoreTokenController;
+use Interfaces\Api\V1\Controllers\Tokens\DestroyCurrentTokenController;
+use Interfaces\Api\V1\Controllers\Tokens\StoreTokenController;
+use Interfaces\Api\V1\Controllers\Users\ShowUserController;
 
 return [
     'versions' => [
@@ -21,6 +25,8 @@ return [
             DestroyCurrentTokenControllerContract::class => DestroyCurrentTokenController::class,
             ShowUserControllerContract::class => ShowUserController::class,
             IndexEndpointControllerContract::class => IndexEndpointController::class,
+            ShowEndpointControllerContract::class => ShowEndpointController::class,
+            IndexEndpointEventControllerContract::class => IndexEndpointEventController::class,
         ],
     ],
 ];

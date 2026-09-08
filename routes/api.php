@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 use App\Routing\ApiRoute;
 use Illuminate\Support\Facades\Route;
-use Interfaces\Api\Contracts\DestroyCurrentTokenControllerContract;
-use Interfaces\Api\Contracts\IndexEndpointControllerContract;
+use Interfaces\Api\Contracts\EndpointEvents\IndexEndpointEventControllerContract;
+use Interfaces\Api\Contracts\Endpoints\IndexEndpointControllerContract;
+use Interfaces\Api\Contracts\Endpoints\ShowEndpointControllerContract;
 use Interfaces\Api\Contracts\PingControllerContract;
-use Interfaces\Api\Contracts\ShowUserControllerContract;
-use Interfaces\Api\Contracts\StoreTokenControllerContract;
+use Interfaces\Api\Contracts\Tokens\DestroyCurrentTokenControllerContract;
+use Interfaces\Api\Contracts\Tokens\StoreTokenControllerContract;
+use Interfaces\Api\Contracts\Users\ShowUserControllerContract;
 use Interfaces\Api\Middleware\BindApiVersion;
 
 Route::prefix('v{version}')
@@ -27,5 +29,9 @@ Route::prefix('v{version}')
                 ->name(ApiRoute::ShowUser);
             Route::get('/endpoints', IndexEndpointControllerContract::class)
                 ->name(ApiRoute::IndexEndpoints);
+            Route::get('/endpoints/{endpoint}', ShowEndpointControllerContract::class)
+                ->name(ApiRoute::ShowEndpoints);
+            Route::get('/endpoints/{endpoint}/events', IndexEndpointEventControllerContract::class)
+                ->name(ApiRoute::IndexEndpointEvents);
         });
     });
