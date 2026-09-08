@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Routing\ApiRoute;
 use Illuminate\Support\Facades\Route;
+use Interfaces\Api\Contracts\Deliveries\ReplayDeliveryControllerContract;
 use Interfaces\Api\Contracts\Deliveries\ShowDeliveryControllerContract;
 use Interfaces\Api\Contracts\EndpointEvents\IndexEndpointEventControllerContract;
 use Interfaces\Api\Contracts\EndpointEvents\ShowEndpointEventControllerContract;
@@ -40,8 +41,10 @@ Route::prefix('v{version}')
                 ->name(ApiRoute::IndexEndpointEvents);
             Route::get('/events/{endpointEvent}', ShowEndpointEventControllerContract::class)
                 ->name(ApiRoute::ShowEvents);
-                
+
             Route::get('/deliveries/{delivery}', ShowDeliveryControllerContract::class)
                 ->name(ApiRoute::ShowDeliveries);
+            Route::post('/deliveries/{delivery}/replay', ReplayDeliveryControllerContract::class)
+                ->name(ApiRoute::ReplayDeliveries);
         });
     });
