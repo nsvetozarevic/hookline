@@ -23,9 +23,9 @@ Interfaces/Panel            session UI (Livewire 4), Fortify CreateNewUser
 
 Domain code never imports `Interfaces`. HTTP adapters map requests to DTOs (`Data/`) and call actions.
 
-`Domain/Webhook` holds Standard Webhooks signing and verification for both capture and delivery - neither Endpoint nor Delivery owns it.
+`Domain/Webhook` holds Standard Webhooks signing and verification for both capture and delivery - neither Endpoint nor Delivery owns it. `Domain/Endpoint` and `Domain/Delivery` may import `Domain/Webhook`; `Domain/Webhook` imports neither.
 
-`Domain/Delivery` may import `Domain/Endpoint` models. `Domain/Endpoint` must not import Delivery models. The one exception is `CaptureWebhook`: it may call `FanOutDeliveries` and dispatch `DeliverDelivery`, so the event and its delivery rows commit in one transaction and jobs run after commit. `Domain/Endpoint` and `Domain/Delivery` may import `Domain/Webhook`; `Domain/Webhook` imports neither.
+Endpoint and Delivery are inbound vs outbound folders, not a one-way wall. Capture writes an event and its delivery rows in one transaction, `EndpointEvent` exposes `deliveries()`, and a `Delivery` belongs to an `EndpointEvent`. That coupling is the product. Endpoint still does not own claim, retry, or SSRF; Delivery still does not own capture tokens.
 
 ## Runtime flow
 
@@ -42,8 +42,10 @@ flowchart TB
 
   subgraph capture["Capture - POST /capture/{token}"]
     P([Provider]) --> POST[Inbound POST]
-    POST --> VAL{CaptureWebhookRequest}
-    VAL -->|404, 413, 401, 400, 429| REJ[Reject JSON]
+    POST --> THROTTLE{throttle:capture}
+    THROTTLE -->|429| REJ[Reject JSON]
+    THROTTLE --> VAL{CaptureWebhookRequest}
+    VAL -->|404, 413, 401, 400| REJ
     VAL --> CAP[CaptureWebhook]
     CAP --> DUP{duplicate webhook-id?}
     DUP -->|yes| R200[200 - existing row kept]
@@ -84,17 +86,18 @@ flowchart TB
 
 ## Capture
 
-`CaptureWebhook` persists the event, calls `FanOutDeliveries` in the same transaction, then dispatches delivery jobs after commit. That is the allowed Endpoint → Delivery seam; Endpoint still must not import Delivery models.
+`CaptureWebhook` persists the event, calls `FanOutDeliveries` in the same transaction, then dispatches delivery jobs after commit.
 
-`POST /capture/{captureToken}` is CSRF-exempt and unauthenticated; the token in the URL identifies the endpoint, and Standard Webhooks HMAC verifies the payload. `CaptureWebhookRequest` runs the gates in a deliberate order:
+`POST /capture/{captureToken}` is CSRF-exempt and unauthenticated; the token in the URL identifies the endpoint, and Standard Webhooks HMAC verifies the payload.
 
-- 404 - token missing or endpoint inactive
-- 413 - body over the configured cap (checked **before** HMAC, so oversized bodies are never hashed)
-- 401 - Standard Webhooks HMAC / timestamp / missing or malformed `webhook-id`
-- 400 - `webhook-id` longer than 255 chars (after HMAC, so unsigned callers still get 401)
-- 429 - `throttle:capture`, per **token**, with `Retry-After`
+Gates run in this order:
 
-The rate limiter is keyed per token, not per IP: providers like Stripe and GitHub share egress IPs, so IP-keyed limits would let one user exhaust another's budget.
+- 429 - `throttle:capture` middleware, before the Form Request, with `Retry-After`. Keyed by the token **string in the URL**, not by whether that token exists, and not by IP. A missing token that has already exhausted its bucket returns 429, not 404. Providers like Stripe and GitHub share egress IPs, so an IP-keyed limit would let one user exhaust another's budget.
+- Then `CaptureWebhookRequest`:
+  - 404 - token missing or endpoint inactive
+  - 413 - body over the configured cap (checked **before** HMAC, so oversized bodies are never hashed)
+  - 401 - Standard Webhooks HMAC / timestamp / missing or malformed `webhook-id`
+  - 400 - `webhook-id` longer than 255 chars (after HMAC, so unsigned callers still get 401)
 
 Capture implements [Standard Webhooks](https://www.standardwebhooks.com/) v1: signed content is `id.timestamp.body`, signature is `v1,` + base64 HMAC-SHA256 over the decoded `whsec_` secret. `webhook-id` is also the deduplication key. Verification accepts any unexpired secret, which is what makes rotation zero-downtime.
 
