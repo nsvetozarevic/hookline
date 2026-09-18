@@ -25,6 +25,8 @@ Domain code never imports `Interfaces`. HTTP adapters map requests to DTOs (`Dat
 
 `Domain/Webhook` holds Standard Webhooks signing and verification for both capture and delivery - neither Endpoint nor Delivery owns it.
 
+`Domain/Delivery` may import `Domain/Endpoint` models. `Domain/Endpoint` must not import Delivery models. The one exception is `CaptureWebhook`: it may call `FanOutDeliveries` and dispatch `DeliverDelivery`, so the event and its delivery rows commit in one transaction and jobs run after commit. `Domain/Endpoint` and `Domain/Delivery` may import `Domain/Webhook`; `Domain/Webhook` imports neither.
+
 ## Runtime flow
 
 Setup (panel): create an **endpoint** (capture token + signing secret) and one or more **destinations** per endpoint. Runtime path:
@@ -82,7 +84,7 @@ flowchart TB
 
 ## Capture
 
-`CaptureWebhook` persists the event, calls `FanOutDeliveries` in the same transaction, then dispatches delivery jobs after commit.
+`CaptureWebhook` persists the event, calls `FanOutDeliveries` in the same transaction, then dispatches delivery jobs after commit. That is the allowed Endpoint → Delivery seam; Endpoint still must not import Delivery models.
 
 `POST /capture/{captureToken}` is CSRF-exempt and unauthenticated; the token in the URL identifies the endpoint, and Standard Webhooks HMAC verifies the payload. `CaptureWebhookRequest` runs the gates in a deliberate order:
 
