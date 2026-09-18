@@ -8,6 +8,7 @@ use Domain\Delivery\Actions\ReplayDelivery;
 use Domain\Delivery\Enums\DeliveryStatus;
 use Domain\Delivery\Models\Delivery;
 use Domain\Endpoint\Models\EndpointEvent;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -58,7 +59,9 @@ class ShowEndpointEventComponent extends Component
             ->whereIn('status', DeliveryStatus::replayableValues())
             ->firstOrFail();
 
-        $replayDelivery->handle($delivery);
+        if (! $replayDelivery->handle($delivery)) {
+            throw (new ModelNotFoundException())->setModel(Delivery::class, [$deliveryId]);
+        }
     }
 
     private function formattedPayload(): string

@@ -114,7 +114,7 @@ Two scheduled commands back the queue up, every minute: `DispatchDueDeliveries` 
 
 **Guarded egress.** All outbound POSTs go through an SSRF guard (`cboxdk/laravel-ssrf`); blocked URLs are recorded and dead-lettered, not retried. Each attempt records status, duration, and a response snippet for the panel.
 
-Replay (from the panel or `POST /api/v1/deliveries/{delivery}/replay`) resets a `dead` or `succeeded` delivery to `pending` with zero attempts and dispatches immediately; `pending`/`in_flight` rows cannot be replayed.
+Replay (from the panel or `POST /api/v1/deliveries/{delivery}/replay`) resets a `dead` or `succeeded` delivery to `pending` with a single conditional `UPDATE` (same idea as claim): attempts go to zero and a job is dispatched immediately. If zero rows change, the delivery is no longer replayable and the action is a no-op; adapters map that to 422 (API) or 404 (panel). `pending`/`in_flight` rows cannot be replayed.
 
 ## Panel
 

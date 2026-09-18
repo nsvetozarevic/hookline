@@ -11,15 +11,25 @@ use Illuminate\Support\Facades\Log;
 
 class ReplayDelivery
 {
-    public function handle(Delivery $delivery): void
+    public function handle(Delivery $delivery): bool
     {
-        $delivery->status = DeliveryStatus::Pending->value;
-        $delivery->attempts = 0;
-        $delivery->locked_at = null;
-        $delivery->next_attempt_at = now()->toDateTimeString();
-        $delivery->last_status_code = null;
-        $delivery->last_error = null;
-        $delivery->save();
+        $replayed = Delivery::query()
+            ->whereKey($delivery->id)
+            ->whereIn('status', DeliveryStatus::replayableValues())
+            ->update([
+                'status' => DeliveryStatus::Pending->value,
+                'attempts' => 0,
+                'locked_at' => null,
+                'next_attempt_at' => now()->toDateTimeString(),
+                'last_status_code' => null,
+                'last_error' => null,
+            ]) === 1;
+
+        if (! $replayed) {
+            return false;
+        }
+
+        $delivery->refresh();
 
         DeliverDelivery::dispatch($delivery->id);
 
@@ -28,5 +38,7 @@ class ReplayDelivery
             'event_id' => $delivery->endpoint_event_id,
             'destination_id' => $delivery->destination_id,
         ]);
+
+        return true;
     }
 }
