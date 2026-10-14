@@ -24,9 +24,9 @@ class FanOutDeliveries
             $delivery = new Delivery();
             $delivery->endpointEvent()->associate($endpointEvent);
             $delivery->destination()->associate($destination);
-            $delivery->status = DeliveryStatus::Pending->value;
+            $delivery->status = DeliveryStatus::Pending;
             $delivery->attempts = 0;
-            $delivery->next_attempt_at = now()->toDateTimeString();
+            $delivery->next_attempt_at = now();
             $delivery->save();
 
             $deliveryIds[] = $delivery->id;
