@@ -27,7 +27,7 @@ class IndexDeliveryAttemptResource extends JsonResource
             'response_body_snippet' => $this->response_body_snippet,
             'duration_ms' => $this->duration_ms,
             'error' => $this->error,
-            'created_at' => $this->created_at?->toJSON(),
+            'created_at' => $this->created_at->toJSON(),
         ];
     }
 }

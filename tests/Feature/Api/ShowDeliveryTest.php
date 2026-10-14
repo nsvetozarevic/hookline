@@ -76,7 +76,7 @@ class ShowDeliveryTest extends TestCase
                         'response_body_snippet' => 'error',
                         'duration_ms' => 11,
                         'error' => 'HTTP 500',
-                        'created_at' => $firstAttempt->created_at?->toJSON(),
+                        'created_at' => $firstAttempt->created_at->toJSON(),
                     ],
                     [
                         'attempt_number' => 2,
@@ -85,7 +85,7 @@ class ShowDeliveryTest extends TestCase
                         'response_body_snippet' => '{"ok":true}',
                         'duration_ms' => 8,
                         'error' => null,
-                        'created_at' => $secondAttempt->created_at?->toJSON(),
+                        'created_at' => $secondAttempt->created_at->toJSON(),
                     ],
                 ],
             ])

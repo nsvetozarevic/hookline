@@ -187,7 +187,7 @@ class DeliverDelivery implements ShouldQueue
 
     private function markSucceeded(Delivery $delivery, ?int $responseStatus): void
     {
-        $delivery->status = DeliveryStatus::Succeeded->value;
+        $delivery->status = DeliveryStatus::Succeeded;
         $delivery->locked_at = null;
         $delivery->next_attempt_at = null;
         $delivery->last_status_code = $responseStatus;
@@ -202,7 +202,7 @@ class DeliverDelivery implements ShouldQueue
 
     private function markDead(Delivery $delivery, ?int $responseStatus, ?string $error): void
     {
-        $delivery->status = DeliveryStatus::Dead->value;
+        $delivery->status = DeliveryStatus::Dead;
         $delivery->locked_at = null;
         $delivery->next_attempt_at = null;
         $delivery->last_status_code = $responseStatus;
@@ -227,9 +227,9 @@ class DeliverDelivery implements ShouldQueue
         $delaySeconds = $this->backoffSeconds($delivery->attempts);
         $nextAttemptAt = now()->addSeconds($delaySeconds);
 
-        $delivery->status = DeliveryStatus::Pending->value;
+        $delivery->status = DeliveryStatus::Pending;
         $delivery->locked_at = null;
-        $delivery->next_attempt_at = $nextAttemptAt->toDateTimeString();
+        $delivery->next_attempt_at = $nextAttemptAt;
         $delivery->last_status_code = $result->responseStatus;
         $delivery->last_error = $this->failureMessage($result);
         $delivery->save();

@@ -242,9 +242,9 @@ class DeliverDeliveryTest extends TestCase
     {
         ['delivery' => $delivery] = $this->seedPendingDelivery();
 
-        $delivery->status = DeliveryStatus::InFlight->value;
+        $delivery->status = DeliveryStatus::InFlight;
         $delivery->attempts = 1;
-        $delivery->locked_at = now()->toDateTimeString();
+        $delivery->locked_at = now();
         $delivery->save();
 
         (new DeliverDelivery($delivery->id))->failed(new \RuntimeException('Unexpected bug'));
