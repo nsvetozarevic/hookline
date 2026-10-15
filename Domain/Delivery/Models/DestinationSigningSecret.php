@@ -35,6 +35,7 @@ class DestinationSigningSecret extends Model
     protected function casts(): array
     {
         return [
+            'secret' => 'encrypted',
             'expires_at' => 'datetime',
         ];
     }

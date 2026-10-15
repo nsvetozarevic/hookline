@@ -33,7 +33,6 @@ class ShowEndpointTest extends TestCase
                 'name' => 'Stripe',
                 'provider' => 'stripe',
                 'capture_token' => $endpoint->capture_token,
-                'signing_secret' => $endpoint->currentSigningSecret->secret,
                 'is_active' => true,
                 'created_at' => $endpoint->created_at?->toJSON(),
             ]);

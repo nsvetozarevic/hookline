@@ -10,6 +10,7 @@ use Domain\Endpoint\Models\EndpointEvent;
 use Domain\Endpoint\Models\EndpointSigningSecret;
 use Domain\Webhook\Utility\WebhookSecret;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -44,6 +45,32 @@ class CaptureWebhookTest extends TestCase
             'deduplication_key' => 'msg_1',
             'payload' => $body,
         ]);
+    }
+
+    #[Test]
+    public function encrypted_signing_secret_still_verifies_a_capture(): void
+    {
+        $endpoint = Endpoint::factory()->create();
+        $signingSecret = $endpoint->currentSigningSecret;
+        $plaintext = $signingSecret->secret;
+        $stored = DB::table('endpoint_signing_secrets')->where('id', $signingSecret->id)->value('secret');
+        $body = '{"ok":true}';
+
+        $this->assertIsString($stored);
+        $this->assertNotSame($plaintext, $stored);
+        $this->assertStringStartsWith('whsec_', $plaintext);
+        $this->assertStringStartsNotWith('whsec_', $stored);
+
+        $this->postCapture(
+            $endpoint->capture_token,
+            $body,
+            $this->signedHeaders(
+                signingSecret: $plaintext,
+                body: $body,
+                webhookId: 'msg_encrypted',
+            ),
+        )->assertAccepted()
+            ->assertJsonPath('deduplication_key', 'msg_encrypted');
     }
 
     #[Test]

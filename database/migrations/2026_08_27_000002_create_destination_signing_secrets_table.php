@@ -13,7 +13,7 @@ return new class () extends Migration {
         Schema::create('destination_signing_secrets', function (Blueprint $table) {
             $table->id();
             $table->foreignId('destination_id')->constrained('destinations')->cascadeOnDelete();
-            $table->string('secret', 128);
+            $table->text('secret');
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
 
