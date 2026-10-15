@@ -23,6 +23,7 @@ return new class () extends Migration {
             $table->timestamps();
 
             $table->unique(['endpoint_event_id', 'destination_id']);
+            $table->index('destination_id');
             $table->index(['status', 'next_attempt_at']);
         });
     }

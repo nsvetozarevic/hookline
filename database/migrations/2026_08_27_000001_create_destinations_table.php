@@ -18,6 +18,8 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('max_attempts');
             $table->jsonb('headers')->nullable();
             $table->timestamps();
+
+            $table->index('endpoint_id');
         });
     }
 };
