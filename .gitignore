@@ -9,6 +9,7 @@
 .phpunit.result.cache
 .php-cs-fixer.cache
 /.codex
+/ai_agent
 /.cursor/*
 !/.cursor/rules/
 !/.cursor/rules/**

@@ -20,6 +20,8 @@ return new class () extends Migration {
             $table->unsignedInteger('duration_ms');
             $table->text('error')->nullable();
             $table->timestamp('created_at');
+
+            $table->index(['delivery_id', 'attempt_number']);
         });
     }
 };
