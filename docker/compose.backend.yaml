@@ -1,0 +1,17 @@
+# Backend EC2. One worker and one scheduler. No web traffic.
+name: hookline-backend
+
+services:
+  worker:
+    image: ghcr.io/nsvetozarevic/hookline:${HOOKLINE_TAG:-latest}
+    command: php artisan queue:work --verbose --sleep=1 --tries=1 --max-time=3600
+    env_file:
+      - ../.env
+    restart: unless-stopped
+
+  scheduler:
+    image: ghcr.io/nsvetozarevic/hookline:${HOOKLINE_TAG:-latest}
+    command: php artisan schedule:work
+    env_file:
+      - ../.env
+    restart: unless-stopped
